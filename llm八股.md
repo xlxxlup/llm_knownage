@@ -2,23 +2,31 @@
 
 [【大模型知识点】位置编码——绝对位置编码，相对位置编码，旋转位置编码RoPE（附代码）-CSDN博客](https://blog.csdn.net/qq_45791939/article/details/146075127?ops_request_misc=%7B%22request%5Fid%22%3A%223950a2b8ce1b2b250126e3d928455141%22%2C%22scm%22%3A%2220140713.130102334..%22%7D&request_id=3950a2b8ce1b2b250126e3d928455141&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~top_positive~default-1-146075127-null-null.142^v102^pc_search_result_base4&utm_term=位置编码&spm=1018.2226.3001.4187)
 
-1、绝对位置编码
+1、可学习位置编码
 
-2、可学习位置编码
+2、绝对位置编码
 
 3、旋转位置编码
 
 ### peft
 
+#### transformer
 
+![00c30ee3-da3c-4843-920a-bb30db090085](./image/00c30ee3-da3c-4843-920a-bb30db090085.png)
 
 ### 1.目前主流的开源模型体系 有哪些？
 
 目前主流的开源LLM（语言模型）模型体系包括以下几个：
 
 1. **GPT（Generative Pre-trained Transformer）系列**：由OpenAI发布的一系列基于Transformer架构的语言模型，包括GPT、GPT-2、GPT-3等。GPT模型通过在**大规模无标签文本上进行预训练**，然后在特定任务上进行微调，具有很强的生成能力和语言理解能力。
+
 2. **BERT（Bidirectional Encoder Representations from Transformers）**：由Google发布的一种基于Transformer架构的双向预训练语言模型。BERT模型通过在大规模无标签文本上进行预训练，然后在下游任务上进行微调，具有强大的语言理解能力和表征能力。
+
 3. **T5（Text-to-Text Transfer Transformer）**：由Google发布的一种基于Transformer架构的多任务预训练语言模型。T5模型通过在大规模数据集上进行预训练，可以用于多种自然语言处理任务，如文本分类、机器翻译、问答等。
+
+   **训练时使用的是MLM任务，但是和bert不一样，bert [mask]的目标是token，但是T5使用的是span mask,可以mask掉整个词**
+
+   **还有一个任务是seq2seq的监督学习**
 
 ### 2.prefix LM 和 causal LM 区别是什么？
 
@@ -28,8 +36,8 @@ Prefix LM（前缀语言模型）和Causal LM（因果语言模型）是两种�
 
 Prefix LM其实是Encoder-Decoder模型的变体，为什么这样说？解释如下：
 
-1. 在标准的Encoder-Decoder模型中，Encoder和Decoder各自使用一个独立的Transformer
-2. 而在Prefix LM，Encoder和Decoder则共享了同一个Transformer结构，在Transformer内部通过Attention Mask机制来实现。
+1. **在标准的Encoder-Decoder模型中，Encoder和Decoder各自使用一个独立的Transformer**
+2. **而在Prefix LM，Encoder和Decoder则共享了同一个Transformer结构，在Transformer内部通过Attention Mask机制来实现**。
 
 与标准Encoder-Decoder类似，**Prefix LM在Encoder部分采用Auto Encoding (AE-自编码)模式，即前缀序列中任意两个token都相互可见，而Decoder部分采用Auto Regressive  (AR-自回归)模式，即待生成的token可以看到Encoder侧所有token(包括上下文)和Decoder侧已经生成的token，但不能看未来尚未产生的token**。
 
@@ -529,6 +537,10 @@ $$
 ### swiGLU
 
 ![image-20251211214643693](./llm八股.assets/image-20251211214643693.png)
+
+![image-20260105145303998](./image/image-20260105145303998.png)
+
+表示逐元素相乘
 
 ### swiGLU的优势
 
@@ -1263,53 +1275,48 @@ GQA介于MHA和MQA之间。GQA 综合 MHA 和 MQA ，既不损失太多性能，
 ```python
 import torch
 from torch import nn
-class MutiHeadAttention(torch.nn.Module):
-    def __init__(self, hidden_size, num_heads):
-        super(MutiHeadAttention, self).__init__()
+class MultiHeadAttention(nn.Module):
+    def __init__(self,num_heads,hidden_size):
+        super().__init__()
+
         self.num_heads = num_heads
         self.head_dim = hidden_size // num_heads
-        
-        ## 初始化Q、K、V投影矩阵
-        self.q_linear = nn.Linear(hidden_size, hidden_size)
-        self.k_linear = nn.Linear(hidden_size, hidden_size)
-        self.v_linear = nn.Linear(hidden_size, hidden_size)
-        
-        ## 输出线性层
-        self.o_linear = nn.Linear(hidden_size, hidden_size)
-        
-    def forward(self, hidden_state, attention_mask=None):
-        batch_size = hidden_state.size()[0]
-        
-        query = self.q_linear(hidden_state)
-        key = self.k_linear(hidden_state)
-        value = self.v_linear(hidden_state)
-        
-        query = self.split_head(query)
-        key = self.split_head(key)
-        value = self.split_head(value)
-        
-        ## 计算注意力分数
-        attention_scores = torch.matmul(query, key.transpose(-1, -2)) / torch.sqrt(torch.tensor(self.head_dim))
-        
-        if attention_mask != None:
-            attention_scores += attention_mask * -1e-9
-        
-        ## 对注意力分数进行归一化
-        attention_probs = torch.softmax(attention_scores, dim=-1)
-        
-        output = torch.matmul(attention_probs, value)
-        
-        ## 对注意力输出进行拼接
-        output = output.transpose(-1, -2).contiguous().view(batch_size, -1, self.head_dim * self.num_heads)
-        
-        output = self.o_linear(output)
-        
-        return output
 
-        
-    def split_head(self, x):
-        batch_size = x.size()[0]
-        return x.view(batch_size, -1, self.num_heads, self.head_dim).transpose(1,2)
+        self.q_linear = nn.Linear(hidden_size,hidden_size)
+        self.k_linear = nn.Linear(hidden_size,hidden_size)
+        self.v_linear = nn.Linear(hidden_size,hidden_size)
+
+        self.o_linear = nn.Linear(hidden_size,hidden_size)
+
+    def forward(self,hidden_state,attention_mask=None):
+
+        q = self.q_linear(hidden_state)
+        k = self.k_linear(hidden_state)
+        v = self.v_linear(hidden_state)
+
+        q = self.split(q)
+        k = self.split(k)
+        v = self.split(v)
+
+        attention_scores = torch.matmul(q, k.transpose(-1, -2)) / (self.head_dim ** 0.5)
+
+        if attention_mask is not None:
+            attention_scores = attention_scores.masked_fill(attention_mask, float('-inf'))
+
+        attention_probs = torch.softmax(attention_scores, dim=-1)
+
+        o = torch.matmul(attention_probs, v)
+
+        batch_size = hidden_state.size(0)
+        o = o.transpose(1, 2).reshape(batch_size, -1, self.head_dim * self.num_heads)
+
+        output = self.o_linear(o)
+
+        return output
+    
+    def split(self,hidden_state):
+        batch_size = hidden_state.size(0)
+        return hidden_state.reshape(batch_size,-1,self.num_heads,self.head_dim).transpose(1,2)
     
     
         
@@ -1326,61 +1333,59 @@ class MutiHeadAttention(torch.nn.Module):
 ## 多查询注意力
 import torch
 from torch import nn
-class MutiQueryAttention(torch.nn.Module):
+class MultiQueryAttention(nn.Module):
     def __init__(self, hidden_size, num_heads):
-        super(MutiQueryAttention, self).__init__()
-        self.num_heads = num_heads
+        super().__init__()
+        # 1. 增加参数校验（避免隐性bug）
+        assert hidden_size % num_heads == 0, "hidden_size必须能被num_heads整除"
         self.head_dim = hidden_size // num_heads
-        
-        ## 初始化Q、K、V投影矩阵
+        self.num_heads = num_heads
+
         self.q_linear = nn.Linear(hidden_size, hidden_size)
-        self.k_linear = nn.Linear(hidden_size, self.head_dim) ###
-        self.v_linear = nn.Linear(hidden_size, self.head_dim) ###
-        
-        ## 输出线性层
+        self.k_linear = nn.Linear(hidden_size, self.head_dim)
+        self.v_linear = nn.Linear(hidden_size, self.head_dim)
+
         self.o_linear = nn.Linear(hidden_size, hidden_size)
-        
+
     def forward(self, hidden_state, attention_mask=None):
-        batch_size = hidden_state.size()[0]
-        
-        query = self.q_linear(hidden_state)
-        key = self.k_linear(hidden_state)
-        value = self.v_linear(hidden_state)
-        
-        query = self.split_head(query)
-        key = self.split_head(key, 1)
-        value = self.split_head(value, 1)
-        
-        ## 计算注意力分数
-        attention_scores = torch.matmul(query, key.transpose(-1, -2)) / torch.sqrt(torch.tensor(self.head_dim))
-        
-        if attention_mask != None:
-            attention_scores += attention_mask * -1e-9
-        
-        ## 对注意力分数进行归一化
+        batch_size, seq_len = hidden_state.size(0), hidden_state.size(1)  # 显式获取维度
+
+        q = self.q_linear(hidden_state)
+        k = self.k_linear(hidden_state)
+        v = self.v_linear(hidden_state)
+
+        q = self.split(q)
+        k = self.split(k, 1)
+        v = self.split(v, 1)
+
+        attention_scores = torch.matmul(q, k.transpose(-1, -2)) / (self.head_dim ** 0.5)
+
+        # 2. 适配常规3维mask（核心修复）
+        if attention_mask is not None:
+            # 自动补全mask的4维：[batch, seq_len, seq_len] → [batch, 1, seq_len, seq_len]
+            if attention_mask.dim() == 3:
+                attention_mask = attention_mask.unsqueeze(1)
+            attention_scores = attention_scores.masked_fill(attention_mask, float('-inf'))
+
         attention_probs = torch.softmax(attention_scores, dim=-1)
-        
-        output = torch.matmul(attention_probs, value)
-        
-        output = output.transpose(-1, -2).contiguous().view(batch_size, -1, self.head_dim * self.num_heads)
-        
-        output = self.o_linear(output)
-        
+        o = torch.matmul(attention_probs, v)
+
+        # 3. 显式指定seq_len，替代-1（降低维度推断风险）
+        o = o.transpose(1, 2).contiguous().view(batch_size, seq_len, self.head_dim * self.num_heads)
+
+        output = self.o_linear(o)
         return output
-        
-        
-        
-        
-    def split_head(self, x, head_num=None):
-        
-        batch_size = x.size()[0]
-        
-        if head_num == None:
-            return x.view(batch_size, -1, self.num_heads, self.head_dim).transpose(1,2)
+    
+    def split(self, hidden_state, num_heads=None):
+        batch_size = hidden_state.size(0)
+        seq_len = hidden_state.size(1)  # 显式获取seq_len，避免-1推断
+
+        if num_heads is not None:
+            return hidden_state.reshape(batch_size, seq_len, num_heads, self.head_dim).transpose(1,2)
         else:
-            return x.view(batch_size, -1, head_num, self.head_dim).transpose(1,2)
-    
-    
+            return hidden_state.reshape(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1,2)
+
+   
 ```
 
 相比于多头注意力，多查询注意力在W\_k和W\_v的维度映射上有所不同，还有就是计算注意力分数采用的是广播机制，计算最后的output也是广播机制，其他的与多头注意力完全相同。
@@ -1392,65 +1397,86 @@ GQA将MAQ中的key、value的注意力头数设置为一个能够被原本的注
 不同的模型使用GQA有着不同的实现方式，但是总体的思路就是这么实现的，注意，***设置的组一定要能够被注意力头数整除。***
 
 ```python
-## 分组注意力查询
-import torch
-from torch import nn
-class GroupQueryAttention(torch.nn.Module):
-    def __init__(self, hidden_size, num_heads, group_num):
-        super(MutiQueryAttention, self).__init__()
+class GroupQueryAttention(nn.Module):
+    def __init__(self, num_heads, group_nums, hidden_size):
+        super().__init__()
+        # 核心校验：num_heads必须能被group_nums整除（GQA基础前提）
+        assert num_heads % group_nums == 0, "num_heads must be divisible by group_nums"
+        
         self.num_heads = num_heads
-        self.head_dim = hidden_size // num_heads
-        self.group_num = group_num
-        
-        ## 初始化Q、K、V投影矩阵
+        self.group_nums = group_nums
+        self.head_size = hidden_size // num_heads
+        self.heads_per_group = num_heads // group_nums  # 每个k/v组对应的q头数
+
+        # 线性层：Q对应所有头，K/V对应分组数
         self.q_linear = nn.Linear(hidden_size, hidden_size)
-        self.k_linear = nn.Linear(hidden_size, self.group_num * self.head_dim)
-        self.v_linear = nn.Linear(hidden_size, self.group_num * self.head_dim)
-        
-        ## 输出线性层
+        self.k_linear = nn.Linear(hidden_size, self.group_nums * self.head_size)
+        self.v_linear = nn.Linear(hidden_size, self.group_nums * self.head_size)
         self.o_linear = nn.Linear(hidden_size, hidden_size)
-        
+
+
+
     def forward(self, hidden_state, attention_mask=None):
-        batch_size = hidden_state.size()[0]
-        
-        query = self.q_linear(hidden_state)
-        key = self.k_linear(hidden_state)
-        value = self.v_linear(hidden_state)
-        
-        query = self.split_head(query)
-        key = self.split_head(key, self.group_num)
-        value = self.split_head(value, self.group_num)
-        
-        ## 计算注意力分数
-        attention_scores = torch.matmul(query, key.transpose(-1, -2)) / torch.sqrt(torch.tensor(self.head_dim))
-        
-        if attention_mask != None:
-            attention_scores += attention_mask * -1e-9
-        
-        ## 对注意力分数进行归一化
-        attention_probs = torch.softmax(attention_scores, dim=-1)
-        
-        output = torch.matmul(attention_probs, value)
-        
-        output = output.transpose(-1, -2).contiguous().view(batch_size, -1, self.head_dim * self.num_heads)
-        
-        output = self.o_linear(output)
-        
+        # 显式获取基础维度（避免依赖-1推断，提升鲁棒性）
+        batch_size, seq_len = hidden_state.size(0), hidden_state.size(1)
+
+        # 1. 线性投影：Q→全头，K/V→分组
+        q = self.q_linear(hidden_state)  # [batch, seq_len, num_heads*head_size]
+        k = self.k_linear(hidden_state)  # [batch, seq_len, group_nums*head_size]
+        v = self.v_linear(hidden_state)  # [batch, seq_len, group_nums*head_size]
+
+        # 2. 拆分到多头/分组维度
+        q = self.split(q, is_group=False)  # [batch, num_heads, seq_len, head_size]
+        k = self.split(k, is_group=True)   # [batch, group_nums, seq_len, head_size]
+        v = self.split(v, is_group=True)   # [batch, group_nums, seq_len, head_size]
+
+        # 3. GQA核心：将K/V从group_nums扩展到num_heads（每个组重复heads_per_group次）
+        # 扩展K：[batch, group_nums, seq_len, head_size] → [batch, num_heads, seq_len, head_size]
+        k = k.unsqueeze(2)  # [batch, group_nums, 1, seq_len, head_size]
+        k = k.repeat(1, 1, self.heads_per_group, 1, 1)  # 每个组重复对应q头数
+        k = k.reshape(batch_size, self.num_heads, seq_len, self.head_size)  # 合并维度
+
+        # 扩展V：同K的逻辑
+        v = v.unsqueeze(2)
+        v = v.repeat(1, 1, self.heads_per_group, 1, 1)
+        v = v.reshape(batch_size, self.num_heads, seq_len, self.head_size)
+
+        # 4. 计算注意力分数（Scaled Dot-Product）
+        attention_scores = torch.matmul(q, k.transpose(-1, -2))  # [batch, num_heads, seq_len, seq_len]
+        attention_scores = attention_scores / (self.head_size ** 0.5)  # 缩放因子
+
+        # 5. 应用attention mask（适配常规3维mask，核心优化点）
+        if attention_mask is not None:
+            attention_scores = attention_scores.masked_fill(attention_mask, float('-inf'))
+
+        # 6. 注意力权重归一化
+        attention_probs = torch.softmax(attention_scores, dim=-1)  # [batch, num_heads, seq_len, seq_len]
+
+        # 7. 计算注意力输出并合并多头
+        o = torch.matmul(attention_probs, v)  # [batch, num_heads, seq_len, head_size]
+        # 转置+连续化+合并多头（显式指定seq_len，替代-1）
+        o = o.transpose(1, 2).contiguous()
+        o = o.view(batch_size, seq_len, self.num_heads * self.head_size)
+
+        # 8. 输出线性投影
+        output = self.o_linear(o)  # [batch, seq_len, hidden_size]
+
         return output
-        
-        
-        
-        
-    def split_head(self, x, group_num=None):
-        
-        batch_size,seq_len = x.size()[:2]
-        
-        if group_num == None:
-            return x.view(batch_size, -1, self.num_heads, self.head_dim).transpose(1,2)
+    
+    def split(self, x, is_group=False):
+        """
+        拆分张量到多头/分组维度
+        :param x: 输入张量，shape=[batch, seq_len, hidden_size/group_size]
+        :param is_group: 是否为k/v的分组拆分（True=k/v，False=q）
+        :return: 拆分后张量 - Q: [batch, num_heads, seq_len, head_size]；K/V: [batch, group_nums, seq_len, head_size]
+        """
+        batch_size, seq_len = x.size(0), x.size(1)  # 显式获取维度，避免隐性推断
+        if not is_group:
+            # Q拆分：全头维度
+            return x.reshape(batch_size, seq_len, self.num_heads, self.head_size).transpose(1, 2)
         else:
-            x = x.view(batch_size, -1, group_num, self.head_dim).transpose(1,2)
-            x = x[:, :, None, :, :].expand(batch_size, group_num, self.num_heads // group_num, seq_len, self.head_dim).reshape(batch_size, self.num_heads // group_num * group_num, seq_len, self.head_dim)
-            return x
+            # K/V拆分：分组维度
+            return x.reshape(batch_size, seq_len, self.group_nums, self.head_size).transpose(1, 2)
 ```
 
 
@@ -3441,24 +3467,40 @@ LLMs的幻觉**可能会产生如传播错误信息或侵犯隐私等严重后�
 
 ### 5.为什么LLM会产生幻觉？
 
-LLM 产生幻觉（生成不符合事实、脱离上下文的内容）的核心原因可归为四大类，结合原文要点提炼如下：
+LLM 产生幻觉（**生成不符合事实、脱离上下文的内容**）的核心原因可归为四大类，结合原文要点提炼如下：
 
-1. 数据层面：训练数据的特性与缺陷​
+大模型的“幻觉”指其生成内容与事实不符、虚构或具有误导性的现象，如错误回答事实问题或编造不存在的文献，这一问题在关键领域应用中存在显著风险。
+	
+幻觉成因？
+从大模型全生命周期来看，幻觉成因可分为四个阶段：
+	
+**预训练（pt）阶段**：训练数据含**错误、过时信息**，导致模型知识偏差；**特定领域专业知识稀疏**，使其在这些领域易出错；预训练目标聚焦语言流畅性，缺乏事实性验证能力，优先保证文本连贯而非准确。
+	
+**有监督微调（sft）阶段**：**人工标注数据存在错误或不一致，加之过拟合**，使模型对错误知识过度自信。
 
-- **源 - 目标差异**：训练数据中 “输入（源）” 与 “输出（目标）” 的不一致是关键诱因 —— 既可能是数据收集时的无意识偏差（如不同新闻网站对同一事件的报道差异），也可能是任务设计时的有意识选择（如创意写作等需多样性的场景，不追求严格事实一致）。
+**强化学习与人类反馈（rlhf）阶段**：奖励设计不完善，模型为迎合预定目标，可能牺牲生成内容的正确性和真实性。
 
-- **数据质量问题**：一方面，训练数据中的大量重复会让模型过度偏好高频短语，生成时强行套用导致脱离事实；另一方面，数据中的噪声（错误、虚假信息）会让模型学到错误关联，直接引发幻觉。
-- 模型训练层面：训练逻辑与知识依赖​
+**模型推理阶段**：采用token by token生成策略，无法修正早期错误，导致幻觉滚雪球式扩大；**随机采样策略虽增加回答多样性，但也提高了幻觉风险。**
+	
+幻觉分类
+研究将幻觉分为四类：
+事实冲突：生成内容与客观知识或参照知识冲突，如误称我是一名万粉博主。
 
-- **参数知识偏向**：模型更依赖预训练阶段积累的 “旧知识”，容易忽略实时提供的上下文信息，导致输出与当前场景脱节。
+无中生有：内容虚构且无法验证，如回答房源楼层时编造未提及的楼层信息。
 
-- **训练与应用的逻辑差异**：训练时模型通过 “教师强制（teacher forcing）” 预测真实下一个词，而实际应用中是基于自身生成的内容自回归预测 —— 这种差异会导致误差累积，尤其在长文本生成时，幻觉概率大幅上升。
-- 解码应用层面：生成策略的影响​
+指令误解：偏离用户指令，如要求翻译却直接回答问题。
 
-- **解码随机性**：为提升输出多样性采用的 top-k、top-p、温度调节等策略，会引入随机性，可能让模型选择低概率但不符合事实的词汇，进而产生幻觉。
-- 模型本质局限​
+逻辑错误：推理存在漏洞，如解方程步骤错误。
+	
+缓解方案
+缓解措施覆盖全生命周期，当前聚焦推理阶段：
+**检索增强生成（RAG）**：引入外部知识源，将“闭卷考试”转为“开卷考试”，模型基于检索到的最新、相关信息生成回答，提升准确性，适用于需最新或特定领域信息的场景。
 
-LLM 的核心是学习文本中词汇的统计关联规律，而非理解真实世界的事实逻辑 —— 这一本质决定了其生成内容的准确性始终存在边界，幻觉是其固有的潜在风险。
+后验幻觉检测：
+
+- 白盒方案：分析模型内部注意力分布（如lookback ratio指标）、生成内容的不确定性（通过token概率评估）、内部隐藏状态（如下文熵值、语义一致性）识别幻觉。
+
+- 黑盒方案：通过重复采样评估回答一致性，利用ROUGE、BLEU等指标衡量输出与源信息重叠度，基于命名实体识别检测风险；借助外部工具验证，如搜索引擎核查事实、代码执行器验证推理；利用领域专家模型（如AlignScore指标模型）评估信息对齐程度。
 
 ## DPO(off-policy)
 
@@ -3538,7 +3580,7 @@ A2A作用在agent之间
 
 ![image-20251220172433302](./llm八股.assets/image-20251220172433302.png)
 
-MCP作用在大模型和MCP之间
+**MCP作用在大模型和MCP之间**
 
 ![image-20251220172634420](./llm八股.assets/image-20251220172634420.png)
 
@@ -3572,11 +3614,11 @@ agent问答阶段
 
 三个损失：
 
-ITC:图文对比学习
+**ITC:图文对比学习**
 
-ITM:图文匹配
+**ITM:图文匹配**
 
-LM:基于图片的文本生成
+**LM:基于图片的文本生成**
 
 ![image-20251221143345800](./llm八股.assets/image-20251221143345800.png)
 
@@ -3636,6 +3678,12 @@ CogVlm
 
 1. 论文中明确：视觉专家为图像特征单独设计了**可训练的QKV矩阵**（图中紫色`QKV matrix`），而文本特征复用LLM原有的QKV矩阵（图中白色`QKV matrix`）——这是“视觉专家”的核心：仅训练图像对应的QKV参数，冻结LLM原有参数；
 
+   **在计算完qkv之后，图像和文本的qkv是进行拼接还是直接相加呢？**
+
+   **把「图像的 Q 序列」和「文本的 Q 序列」在序列长度维度拼接，得到一个 “混合模态的 Q 序列”**
+
+   **同理，K 序列、V 序列也做同样的拼接，得到 “混合模态的 K 序列”“混合模态的 V 序列”**
+
 1. **Multi-head Attention**：
 
 1. 图像与文本的Q/K/V在多头注意力层交互，实现“图文特征深度融合”（论文中称为“跨模态注意力交互”）；
@@ -3677,15 +3725,15 @@ CogVLM2采用**“50亿参数视觉编码器 + 70亿参数视觉专家模块 + 8
 
 1. **高分辨率视觉编码**：
 
-1. 用EVA2-CLIP-E作为视觉编码器，支持1344×1344像素输入；在编码器后加入“2×2卷积降采样模块”，压缩高分辨率特征序列长度，平衡性能与推理速度。
+   用EVA2-CLIP-E作为视觉编码器，支持1344×1344像素输入；**在编码器后加入“2×2卷积降采样模块”，压缩高分辨率特征序列长度，平衡性能与推理速度**。
 
 1. **优化的视觉专家模块**：
 
-1. 继承CogVLM的“视觉专家注入LLM层”设计，但新增**动态模态融合机制**——根据任务类型（如VQA/图像描述）调整视觉-语言注意力权重，实现“任务适配的跨模态交互”。
+   继承CogVLM的“视觉专家注入LLM层”设计，但新增**动态模态融合机制**——**根据任务类型（如VQA/图像描述）调整视觉-语言注意力权重，实现“任务适配的跨模态交互**”。
 
 1. **图文位置编码区分**：
 
-1. 图像特征的位置ID全设为0，文本特征位置ID从1开始递增（通过RoPE编码区分模态），避免图文特征混淆。
+   图像特征的位置ID全设为0，文本特征位置ID从1开始递增（通过RoPE编码区分模态），避免图文特征混淆。
 
 ### 三、预训练与微调策略（论文关键训练方法）
 
@@ -3745,7 +3793,7 @@ qwen2.5-vl
 
 ![image-20251226200649230](./image/image-20251226200649230.png)
 
-Qwen3-vl
+## Qwen3-vl
 
 ![image-20251226214005304](./image/image-20251226214005304.png)
 
@@ -3766,6 +3814,8 @@ Qwen3-vl
 ![image-20251226235727315](./image/image-20251226235727315.png)
 
 ![image-20251226235937260](./image/image-20251226235937260.png)
+
+这个感觉有问题，如果文本段的t都一样，感觉文本会失去位置关系
 
 ![0133c01b-c3b7-402e-9457-fd17f8ced52c](./image/0133c01b-c3b7-402e-9457-fd17f8ced52c.png)
 
@@ -3788,6 +3838,12 @@ Qwen3-vl
 ![image-20251223145320636](./image/image-20251223145320636.png)
 
 ![image-20251223150031180](./image/image-20251223150031180.png)
+
+![image-20260101145326225](./llm八股.assets/image-20260101145326225.png)
+
+![image-20260101145612484](./llm八股.assets/image-20260101145612484.png)
+
+![image-20260101145857926](./llm八股.assets/image-20260101145857926.png)
 
 ### DeePSeek MOE
 
@@ -3821,7 +3877,7 @@ Qwen3-vl
 
 ![image-20251224175035982](./image/image-20251224175035982.png)
 
-解决方案就是：额外引入两个矩阵去表示位置编码，然后分开计算两部分。1、不带位置编码的部分 2、带位置编码的部分
+**解决方案就是：额外引入两个矩阵去表示位置编码，然后分开计算两部分。1、不带位置编码的部分 2、带位置编码的部分**
 
 ![image-20251224181451923](./image/image-20251224181451923.png)
 
@@ -3939,7 +3995,7 @@ DeepSeek-R1的完整训练过程是**多轮“微调+强化学习”迭代优化
 
 2、加一个cls的token在最前面，然后将每个patch拉平，拉成一个长为768的向量，然后做一个线性映射，先升维，再降维
 
-3、加上位置编码，位置编码用的是可训练的绝对位置编码。最后得到input_embedding
+3、加上位置编码，位置编码用的是**可训练的绝对位置编码**。最后得到input_embedding
 
 ![image-20251226183326722](./image/image-20251226183326722.png)
 
@@ -3947,11 +4003,15 @@ DeepSeek-R1的完整训练过程是**多轮“微调+强化学习”迭代优化
 
 ![image-20251226190447542](./image/image-20251226190447542.png)
 
+np.dot():计算点积
+
 np.dot(I_f,W_i) : 这里指将特征线性映射
 
 np.exp(t) : 这里指温度系数
 
 ![image-20251226191951201](./image/image-20251226191951201.png)
+
+
 
 GME
 
@@ -3966,3 +4026,181 @@ GME
 ![image-20251227151749117](./image/image-20251227151749117.png)
 
 ![image-20251227151935063](./image/image-20251227151935063.png)
+
+![image-20260105143025237](./image/image-20260105143025237.png)
+
+## MCP通信协议
+
+[(18 条消息) 深度解析：MCP三大核心通信模式STDIO、SSE与Streamable HTTP的终极指南！ - 知乎](https://zhuanlan.zhihu.com/p/1920408556986954650)
+
+【MCP三种传输方式详解：Stdio、SSE、Streamable HTTP】https://www.bilibili.com/video/BV1obKPz6ECM?vd_source=c5c396652c0c83be15efe54e0c348c90
+
+#### stdio
+
+通过子进程的标准输入输出流(stdin、stdout)进行通信(JsonRpc2.0格式)
+
+![image-20260103172848233](./llm八股.assets/image-20260103172848233.png)
+
+#### SSE
+
+缺点：保持长连接，消耗资源
+
+第一次连接时，客户端请求/sse接口，服务器返回调用工具的**唯一目标端点**
+
+客户端只需记住这个端点，多次调用工具时，始终向该端点发 POST 请求即可
+
+![image-20260103175154960](./llm八股.assets/image-20260103175154960.png)
+
+
+
+![e1dbc2d4-30b4-4c2d-909e-6fe9c1ae1596](./llm八股.assets/e1dbc2d4-30b4-4c2d-909e-6fe9c1ae1596.png)
+
+## Streamable Http
+
+![image-20260103182241881](./llm八股.assets/image-20260103182241881.png)
+
+![image-20260103182413353](./llm八股.assets/image-20260103182413353.png)
+
+## Rag评估
+
+[RAG系列：系统评估 - 一文详解五个主流评估指标_rag评估指标-CSDN博客](https://blog.csdn.net/weixin_59191169/article/details/148402530?ops_request_misc=%7B%22request%5Fid%22%3A%22fbe19f5e6f33da8f031c7501d439cce5%22%2C%22scm%22%3A%2220140713.130102334..%22%7D&request_id=fbe19f5e6f33da8f031c7501d439cce5&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduend~default-2-148402530-null-null.142^v102^pc_search_result_base4&utm_term=rag评估指标&spm=1018.2226.3001.4187)
+
+**上下文召回率=上下文覆盖的关键信息数量/参考答案中关键信息总数量**
+
+**上下文相关性=上下文中与问题相关的片段数量/上下文中片段总数量**
+
+**答案忠实度=上下文能够推断出事实的数量/答案拆解出的事实总数量**
+
+**答案相关性=与实际问题相关的模拟问题数量/实际答案推导出的模拟问题总数量**
+
+**答案正确性=实际答案覆盖的关键信息数量/参考答案中关键信息总数量**
+
+## Ragas评价指标
+
+#### 上下文精确率
+
+![image-20260103223137983](./llm八股.assets/image-20260103223137983.png)
+
+#### 上下文召回率
+
+![image-20260103223601890](./llm八股.assets/image-20260103223601890.png)
+
+
+
+#### 上下文实体召回率
+
+![image-20260103223651164](./llm八股.assets/image-20260103223651164.png)
+
+#### 噪声敏感度
+
+![image-20260103223849181](./llm八股.assets/image-20260103223849181.png)
+
+#### 回答相关性
+
+![image-20260103223927018](./llm八股.assets/image-20260103223927018.png)
+
+#### 忠实度
+
+![image-20260103223957972](./llm八股.assets/image-20260103223957972.png)
+
+
+
+## Multi-agent
+
+![31589ce7-1402-49fe-b237-660415adfecb](./llm八股.assets/31589ce7-1402-49fe-b237-660415adfecb.png)
+
+## 多模态项目
+
+数据向量存储格式：`.npy`是**Python 的 NumPy 库专属的二进制文件格式**，专门用于存储单个 NumPy 数组（ndarray），是 NumPy 官方推荐的数组持久化存储方式。
+
+#### lora微调相关
+
+![image-20260104214721861](./llm八股.assets/image-20260104214721861.png)
+
+![7b51d1bf-91b1-480b-9267-766f04f15205](./llm八股.assets/7b51d1bf-91b1-480b-9267-766f04f15205.png)
+
+
+
+#### Prompt
+
+1、"你是一个专利内容分析专家，请根据我提供的专利内容回答我的问题。\n该问题针对于这页专利内容里面的图进行提问：\n<image>\n\n请你在分析专利内容后，回答我的问题：\n【我的问题】【在文件中第10页的示意图中，编号为17的部件相对于编号为18的部件的位置关系是？】\n请仔细思考，你需要特别注意，图中部件的上下、前后、左右位置判断应以标号线所指代的实际结构为准，而不是仅凭直观看数字。在思考结束后，请直接给出你的答案："
+
+2、"你是一个专利内容分析专家，请根据我提供的专利内容回答我的问题。\n专利内容为：\n<image><image>\n\n请你在分析专利内容后，回答我的问题：\n【我的问题】【根据专利文本，酯化反应的主要原料是什么？】\n请仔细思考，在思考结束后，请直接给出你的答案："
+
+3、"""你是一个内容分类专家，请判断用户的这个问题能否直接通过看图回答，还是需要参考其他的相关信息来回答。
+
+  判断规则：已知图是结构图，里面只有部件序号，没有部件名称。如果用户的问题是要通过看图判断某些部件的位置关系，这类问题可以直接通过看图回答；如果用户问题涉及到询问部件是什么、部件名称功能和原理等，这些问题需要参考其他的相关信息来回答。
+
+  对于只需要看图回答的问题，请回答字母"Y"；对于需要参考其他的相关信息来回答的问题，请回答字母"N"。
+
+​    给你提供一些示例
+
+  示例1： 在文件中第5页提供的图片中，编号为4的部件是什么？
+
+  解析：询问部件名称，图里面是没有的
+
+  回答：N
+
+  示例2:基于文件中第6页的图片，部件4位于哪个部件的延伸方向上？
+
+  解析：询问部件位置关系，图里面是可以看出来的
+
+  回答：Y
+
+  示例3:根据文件中第7页的图片，部件41位于部件3的什么位置？
+
+  解析：询问部件位置关系，图里面是可以看出来的
+
+  回答：Y
+
+  你要判断的用户问题是：
+
+  """
+
+4、  question = "你是一个内容提取专家，请从文本中判断，这段描述想表达的准确答案是什么。请仔细思考，在思考结束后，输出简要的答案（通常20个字词以内）。"
+
+  question +="""
+
+  为了便于你回答，我给你提供几个示例：
+
+  示例1
+
+  文本内容为："根据专利内容和图2的描述：\n\n- 编号为15的部件是**滤网**。\n- 编号为12的部件是**连接法兰**。\n\n从图2中可以看出，滤网（15）位于连接法兰（12）的**下方**。\n\n因此，正确答案是在12的下方"
+
+  输出的答案为：在12的下方
+
+  示例2
+
+  文本内容为："根据专利内容，调节可移动折弯模架的位置是通过丝杆机构（部件7）实现的。丝杆机构包括丝杆（71）和丝杆滑块（72），通过调节手轮（74）转动丝杆，从而带动丝杆滑块移动，进而控制导轨滑块（6）沿导轨（5）移动，最终实现可移动折弯模架（1）的位置调节。因此，首先需要操作的部件是丝杆机构（部件7）。"
+
+  输出的答案为：部件7
+
+  示例3
+
+  文本内容为："该专利提供了一种用于滚筒输送机的货物靠边规整处理机构，通过倾斜设置的转辊和联动皮带，实现货物自动靠边规整，减少损伤，提高输送效率。"
+
+  输出的答案为：实现货物自动靠边规整
+
+  示例4:
+
+  文本内容为："定位杆"
+
+  输出的答案为： 定位杆
+
+  示例5:
+
+  文本内容为："部件22位于部件23的左侧"
+
+  输出的答案为： 部件22位于部件23的左侧
+
+  """
+
+  question += ('同时为了便于你回答，我再给你提供一些答案的风格示例：\n')
+
+  question += answer_style + '\n'
+
+  question += "你要判断的文本内容为：\n"
+
+  question += text
+
+  question += "请直接回答文本想要表达的准确答案（风格和前面的示例类似，通常20个字词以内，并且不要改变原始回答的意思），不要解释，你输出的答案为："
