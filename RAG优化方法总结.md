@@ -30,6 +30,7 @@
 #### 1.1 分块优化 (Chunking Optimization)
 
 **1. 基础分块优化**
+
 - **目标**: 确定最优的文本块大小(chunk size)
 - **方法**: 系统性测试不同chunk size(500/1000/1500/2000 tokens)
 - **评估指标**: 检索准确率、上下文完整性、处理速度
@@ -80,6 +81,7 @@
 #### 2.1 查询转换
 
 **6. 查询转换 (Query Transformations)**
+
 - **查询重写**: 优化模糊查询表述
 - **查询扩展**: 添加同义词、相关概念
 - **查询拆分**: 将复杂问题分解为子查询
@@ -107,7 +109,7 @@
   | 生成内容 | 为查询生成假设文档 | 为文档生成假设问题 |
   | 检索逻辑 | 假设文档→真实文档 | 用户问题→假设问题→真实文档 |
   | 适用场景 | 短查询→长文档 | 多样化查询风格 |
-- **优势**: 解决查询与文档的"表述风格不匹配"
+- **优势**: **解决查询与文档的"表述风格不匹配**"
 
 ---
 
@@ -342,19 +344,7 @@
   
 - **官方文档**: [microsoft.github.io/graphrag](https://microsoft.github.io/graphrag/)
 
-**24. RAPTOR (Recursive Abstractive Processing for Tree-Organized Retrieval)**
-- **核心思想**: 构建文档的层次化树结构
-- **流程**:
-  ```
-  1. 文本分块 → 嵌入 → 聚类
-  2. 为每个聚类生成摘要
-  3. 递归构建: 块 → 聚类摘要 → 高层摘要
-  4. 查询时在不同层次检索
-  ```
-- **优势**:
-  - 多粒度语义理解
-  - 高效的分层检索
-  - 更好的上下文整合
+
 
 ---
 
@@ -378,30 +368,6 @@
   2. 测试不同chunk size
   3. 评估检索+生成质量
   4. 选择最优参数
-
----
-
-### 🔄 七、高级检索模式 (4种)
-
-**28. 查询重写与扩展**
-- 同义词扩展
-- 查询澄清(向用户提问)
-- 多语言查询支持
-
-**29. 路由检索 (Routing Retrieval)**
-- 根据查询类型路由到不同检索器
-- 例如:
-  - 数值查询 → SQL数据库
-  - 语义查询 → 向量数据库
-  - 时效查询 → 网页搜索
-
-**30. 假设性文档嵌入+**
-- 结合HyDE与检索后验证
-- 生成假设答案 → 检索 → 验证相关性
-
-**31. 递归检索 (Recursive Retrieval)**
-- 类似分层检索,但更动态
-- 根据初始检索结果决定是否深入检索
 
 ---
 
@@ -883,41 +849,13 @@ HyPE流程:
 3. **分步实施**: 按路线图逐步推进
 4. **持续优化**: 基于数据和反馈持续改进
 
----
 
-## 参考资料
-
-### 论文
-- [GraphRAG: Unlocking LLM Discovery on Complex Knowledge](https://arxiv.org/abs/2404.16130)
-- [Hypothetical Document Embeddings (HyDE)](https://arxiv.org/abs/2212.10496)
-- [Self-RAG: Learning to Retrieve, Generate, and Critique](https://arxiv.org/abs/2310.11511)
-- [Corrective RAG (CRAG)](https://arxiv.org/abs/2401.15884)
-- [Better RAG using Relevant Information Gain (Dartboard)](https://arxiv.org/abs/2407.12101)
-- [RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval](https://arxiv.org/abs/2401.18059)
-
-### 工具文档
-- [LangChain](https://python.langchain.com/)
-- [LlamaIndex](https://docs.llamaindex.ai/)
-- [FAISS](https://faiss.ai/)
-- [Microsoft GraphRAG](https://microsoft.github.io/graphrag/)
-- [DeepEval](https://docs.confident-ai.com/)
-
-### 社区资源
-- [RAG技术精选论文列表](https://github.com/Stardust-zero/RAG-Papers)
-- [RAG实战案例库](https://github.com/langchain-ai/langchain/tree/master/cookbook)
-- [RAG评估框架](https://github.com/explodinggradients/ragas)
-
----
-
-> 
 
 #### 近似最近邻
 
-牺牲部分的准确度，提高更快的检索 性能
+牺牲部分的准确度，提高更快的检索性能。通过构建高效的数据结构，减少需要比较的数据点数量，从而实现快速检索。
 
-通过构建高效的数据结构，减少需要比较的数据点数量，从而实现快速检索
-
-提前计算向量之间的相似度，将相似度高的先组织在一起，便于以后更快的找到相似的对象，这个过程叫做vcetor indexing  建立向量索引
+提前计算向量之间的相似度，**将相似度高的先组织在一起**，便于以后更快的找到相似的对象，这个过程叫做vcetor indexing  建立向量索引
 
 预先对数据进行聚类，不同类型数据组织成不同的簇
 
@@ -927,6 +865,20 @@ HyPE流程:
 
 基于聚类的索引
 
-基于图的索引 HNSW ,构建多层图结构，其中每一层都是由相互连接的节点组成的可导航小世界网络，高层级的图由较少的节点组成，能支持快速的大范围跳跃搜索，从而迅速缩小搜索空间。较低层的图包含多多节点，实现更细致的搜索，最底层的则包括所有的数据点。平衡搜索速度与准确性
+基于图的索引 HNSW ,**构建多层图结构**，其中每一层都是由相互连接的节点组成的**可导航小世界网络**，高层级的图由较少的节点组成，能支持快速的大范围跳跃搜索，从而迅速缩小搜索空间。较低层的图包含多节点，实现更细致的搜索，最底层的则包括所有的数据点。平衡搜索速度与准确性
 
 ![image-20260109190209111](./image/image-20260109190209111.png)
+
+### RAG评估
+
+![image-20260110171258696](./image/image-20260110171258696.png)
+
+![image-20260110171327382](./image/image-20260110171327382.png)
+
+![image-20260110171511033](./image/image-20260110171511033.png)
+
+![image-20260110171851739](./image/image-20260110171851739.png)
+
+![image-20260110171942886](./image/image-20260110171942886.png)
+
+![image-20260110172154371](./image/image-20260110172154371.png)

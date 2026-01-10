@@ -4078,48 +4078,6 @@ GME
 
 ![image-20260103182413353](./llm八股.assets/image-20260103182413353.png)
 
-## Rag评估
-
-[RAG系列：系统评估 - 一文详解五个主流评估指标_rag评估指标-CSDN博客](https://blog.csdn.net/weixin_59191169/article/details/148402530?ops_request_misc=%7B%22request%5Fid%22%3A%22fbe19f5e6f33da8f031c7501d439cce5%22%2C%22scm%22%3A%2220140713.130102334..%22%7D&request_id=fbe19f5e6f33da8f031c7501d439cce5&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduend~default-2-148402530-null-null.142^v102^pc_search_result_base4&utm_term=rag评估指标&spm=1018.2226.3001.4187)
-
-**上下文召回率=上下文覆盖的关键信息数量/参考答案中关键信息总数量**
-
-**上下文相关性=上下文中与问题相关的片段数量/上下文中片段总数量**
-
-**答案忠实度=上下文能够推断出事实的数量/答案拆解出的事实总数量**
-
-**答案相关性=与实际问题相关的模拟问题数量/实际答案推导出的模拟问题总数量**
-
-**答案正确性=实际答案覆盖的关键信息数量/参考答案中关键信息总数量**
-
-## Ragas评价指标
-
-#### 上下文精确率
-
-![image-20260103223137983](./llm八股.assets/image-20260103223137983.png)
-
-#### 上下文召回率
-
-![image-20260103223601890](./llm八股.assets/image-20260103223601890.png)
-
-
-
-#### 上下文实体召回率
-
-![image-20260103223651164](./llm八股.assets/image-20260103223651164.png)
-
-#### 噪声敏感度
-
-![image-20260103223849181](./llm八股.assets/image-20260103223849181.png)
-
-#### 回答相关性
-
-![image-20260103223927018](./llm八股.assets/image-20260103223927018.png)
-
-#### 忠实度
-
-![image-20260103223957972](./llm八股.assets/image-20260103223957972.png)
-
 
 
 ## Multi-agent

@@ -79,3 +79,10 @@ You are a helpful assistant.<|im_end|>
 <|im_start|>assistant
 <|endoftext|>'
 
+## Qwen2.5
+
+[(1 封私信 / 34 条消息) Qwen 2.5 技术报告（中文速通版） - 知乎](https://zhuanlan.zhihu.com/p/14710836610)
+
+## Qwen3
+
+后训练阶段：1、长思维链数据冷启动微调 2、数学、code上做强化学习 3、混合数据集 推理输出、非推理输出 做微调 4、通用领域强化学习
