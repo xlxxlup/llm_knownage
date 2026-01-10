@@ -67,7 +67,7 @@
 
 
 
-# gme-qwen2vl-7b
+# gme-qwen2-vl-7b
 输入一张图片进行embedding时，会在前面加一句提示词"You are a helpful assistant."
 
 '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<|endoftext|>'

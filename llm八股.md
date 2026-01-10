@@ -128,6 +128,9 @@ LLMs复读机问题（LLMs Parroting Problem）通常指的是模型在生成文
 
 ### 6.BERT
 
+1. **BERT-Base**: 使用 **12层** encoder
+2. **BERT-Large**: 使用 **24层** encoder
+
 #### 6.1 基础知识
 
 BERT（Bidirectional Encoder Representations from Transformers）是谷歌提出，作为一个Word2Vec的替代者，其在NLP领域的11个方向大幅刷新了精度，可以说是近年来自残差网络最优突破性的一项技术了。论文的主要特点以下几点：
@@ -669,7 +672,7 @@ $$
 
 - **Masked Multi-Head Attention**: 针对 Transformer Decoder 设计的改进版 Multi-Head Attention，**通过掩码（Mask）屏蔽当前位置之后的 token 对应的注意力得分；确保解码时仅能依赖已生成的前文信息，避免信息泄露**。
 
-- **Flash Attention**: 基于显存优化的 Scaled Dot-Product Attention 变体，通过**分块（tiling）**和**重计算（recomputation）**减少显存占用，同时**利用 GPU 内存层级特性提升计算速度**；解决了长序列 Attention 的显存瓶颈，是当前工业界长文本模型的主流实现。
+- **Flash Attention**: 基于显存优化的 Scaled Dot-Product Attention 变体，通过**分块（tiling）**和**重计算（recomputation）减少显存占用**，同时**利用 GPU 内存层级特性提升计算速度**；**解决了长序列 Attention 的显存瓶颈**，是当前工业界长文本模型的主流实现。
 
 - **Multi-Query Attention (MQA)**: 对 Multi-Head Attention 的简化，**所有注意力头共享一组 K/V，仅保留多个独立的 Q**；大幅降低 Decoder 阶段的计算和显存成本（尤其是推理阶段），但会损失少量注意力多样性。
 
@@ -717,7 +720,7 @@ Transformer Paper里重新用QKV定义了Attention。所谓的QKV就是Query，K
 
 假设a = softmax(x), 函数对x求导得a(1-a), 如果a为最大值则a=1, 那么 a(1-1)=0 导致梯度消失。
 
-Attention的计算是在内积之后进行softmax，主要涉及的运算是$e^{q \cdot k}$，可以大致认为内积之后、softmax之前的数值在$-3\sqrt{d}$到$3\sqrt{d}$这个范围内，由于d通常都至少是64，所以$e^{3\sqrt{d}}$比较大而 $e^{-3\sqrt{d}}$比较小，因此经过softmax之后，Attention的分布非常接近一个one hot分布了，这带来严重的梯度消失问题，导致训练效果差。（例如y=softmax(x)在|x|较大时进入了饱和区，x继续变化y值也几乎不变，即饱和区梯度消失）
+Attention的计算是在内积之后进行softmax，主要涉及的运算是$e^{q \cdot k}$，可以大致认为内积之后、softmax之前的数值在$-3\sqrt{d}$到$3\sqrt{d}$这个范围内，由于d通常都至少是64，所以$e^{3\sqrt{d}}$比较大而 $e^{-3\sqrt{d}}$比较小，**因此经过softmax之后，Attention的分布非常接近一个one hot分布了，这带来严重的梯度消失问题**，导致训练效果差。（例如y=softmax(x)在|x|较大时进入了饱和区，x继续变化y值也几乎不变，即饱和区梯度消失）
 
 相应地，解决方法就有两个:
 
@@ -806,8 +809,8 @@ BERT在第一句前会加一个 \[CLS] 标志，**最后一层该位对应向量
 
 Flash Attention的主要目的是加速和节省内存，主要贡献包括： &#x20;
 
-- 计算softmax时候不需要全量input数据，可以分段计算； &#x20;
-- 反向传播的时候，不存储attention matrix ($N^2$的矩阵)，而是只存储softmax归一化的系数。
+- **计算softmax时候不需要全量input数据，可以分段计算**； &#x20;
+- **反向传播的时候，不存储attention matrix ($N^2$的矩阵)，而是只存储softmax归一化的系数。**
 
 #### 5.1 动机
 
@@ -1240,9 +1243,9 @@ $$
 
 ## 1.总结
 
-- 在 **MHA（Multi Head Attention）** 中，每个头有自己单独的 key-value 对；标准的多头注意力机制，h个Query、Key 和 Value 矩阵。
-- 在 **MQA（Multi Query Attention）** 中只会有一组 key-value 对；多查询注意力的一种变体，也是用于自回归解码的一种注意力机制。与MHA不同的是，**MQA 让所有的头之间共享同一份 Key 和 Value 矩阵，每个头只单独保留了一份 Query 参数，从而大大减少 Key 和 Value 矩阵的参数量**。
-- 在 **GQA（Grouped Query Attention）**中，会对 attention 进行分组操作，query 被分为 N 组，每个组共享一个 Key 和 Value 矩阵**GQA将查询头分成G组，每个组共享一个Key 和 Value 矩阵**。GQA-G是指具有G组的grouped-query attention。GQA-1具有单个组，因此具有单个Key 和 Value，等效于MQA。而GQA-H具有与头数相等的组，等效于MHA。
+- 在 **MHA（Multi Head Attention）** 中，**每个头有自己单独的 key-value 对**；标准的多头注意力机制，h个Query、Key 和 Value 矩阵。
+- 在 **MQA（Multi Query Attention）** 中**只会有一组 key-value 对**；多查询注意力的一种变体，也是用于自回归解码的一种注意力机制。与MHA不同的是，**MQA 让所有的头之间共享同一份 Key 和 Value 矩阵，每个头只单独保留了一份 Query 参数，从而大大减少 Key 和 Value 矩阵的参数量**。
+- 在 **GQA（Grouped Query Attention）**中，**会对 attention 进行分组操作，query 被分为 N 组，每个组共享一个 Key 和 Value 矩阵**。GQA-G是指具有G组的grouped-query attention。GQA-1具有单个组，因此具有单个Key 和 Value，等效于MQA。而GQA-H具有与头数相等的组，等效于MHA。
 
 ![](llm_interview_note-main/02.大语言模型架构/MHA_MQA_GQA/image/image_jBnali-wuO.png)
 
@@ -3219,6 +3222,10 @@ def critic_loss_fn(self, values, old_values, returns, mask):
 
 **在重复训练同一个 batch 时，优势函数 A_t 绝对不需要、也不能用最新的价值模型（critic）重新计算 V (s)，A_t 必须全程固定（复用第一次计算的结果）**
 
+![image-20260106200017122](./image/image-20260106200017122.png)
+
+![image-20260106200055414](./image/image-20260106200055414.png)
+
 # DPO
 
 Direct Preference Optimization: Your Language Model is Secretly a Reward Model
@@ -3624,17 +3631,25 @@ agent问答阶段
 
 数据集自举训练
 
+1、先用网络数据和人类标注的数据去训练，得到一个预训练模型
+
+2、然后使用人类标注的数据集进行微调，得到filter和captioner
+
+3、然后将网络收集的数据给到3中的filter模型进行过滤
+
+4、然后将网络收集的数据给到3中的captioner模型生成文本，再将图文给filter进行过滤
+
+5、最终，人工标注的，以及3和4中基于网络数据进行清洗过的数据，又得到了一个新的预训练数据，以此往复
+
 ### BLIP2
 
-第一阶段预训练(Q-former学习视觉语言表征之间的关系)，和BLIP的训练方法差不多
+第一阶段预训练(**Q-former学习视觉语言表征之间的关系**)，和BLIP的训练方法差不多
 
 ![image-20251221155932128](./llm八股.assets/image-20251221155932128.png)
 
-第二阶段预训练(视觉到语言生成学习，并训练Q-Forform使其输出的视觉表示能够被LLM解读)
+第二阶段预训练(**视觉到语言生成学习，并训练Q-Forform使其输出的视觉表示能够被LLM解读**)
 
 ![image-20251221160125873](./llm八股.assets/image-20251221160125873.png)
-
-CogVlm
 
 # CogVLM：NeurIPS 2024 视觉专家模型解读
 
@@ -3644,7 +3659,7 @@ CogVlm
 
 ### 一、论文核心背景（图的设计动机）
 
-论文针对**“浅层对齐多模态模型（如BLIP-2）视觉能力弱、深度融合模型（如LLaVA）易遗忘NLP能力”**的痛点，提出了**“视觉专家（Visual Expert）”**机制：在冻结预训练语言模型（LLM）主体参数的前提下，在LLM每一层插入可训练的视觉专家模块，实现“图文特征深度融合+保留LLM原文本能力”——你提供的图正是这一核心机制的可视化。
+论文针对**“浅层对齐多模态模型（如BLIP-2）视觉能力弱、深度融合模型（如LLaVA）易遗忘NLP能力”**的痛点，提出了**“视觉专家（Visual Expert）”**机制：**在冻结预训练语言模型（LLM）主体参数的前提下，在LLM每一层插入可训练的视觉专家模块**，实现“图文特征深度融合+保留LLM原文本能力”——你提供的图正是这一核心机制的可视化。
 
 ### 二、图(a)：对应论文的“输入处理模块”（论文2.1节）
 
@@ -3781,7 +3796,9 @@ qwen2-vl
 
 **还有就是将模态映射层从Cross-Attention改为了MLP**
 
-qwen2.5-vl
+## qwen2.5-vl
+
+![image-20260107001700899](./image/image-20260107001700899.png)
 
 [(6 条消息) 【Qwen】Qwen2.5-VL技术报告 - 知乎](https://zhuanlan.zhihu.com/p/1927463592279671080)
 
@@ -3934,7 +3951,7 @@ DeepSeek-R1的完整训练过程是**多轮“微调+强化学习”迭代优化
 ### 阶段3：拒绝采样生成高质量数据
 
 - **输入**：阶段2的中间模型
-- **操作**：对同一个任务（如数学题）让模型生成多个输出，通过“拒绝”低质量/错误输出、保留步骤完整/逻辑清晰的输出，得到高质量**推理数据**；再结合DeepSeek V3的**非推理数据**（写作、日常问答等），形成“推理+通用”混合数据集
+- **操作**：**对同一个任务（如数学题）让模型生成多个输出，通过“拒绝”低质量/错误输出、保留步骤完整/逻辑清晰的输出，得到高质量推理数据**；再结合DeepSeek V3的**非推理数据**（写作、日常问答等），形成“推理+通用”混合数据集
 - **目标**：获取能平衡推理与通用能力的训练数据
 
 ### 阶段4：混合数据监督微调（SFT）
@@ -3983,7 +4000,7 @@ DeepSeek-R1的完整训练过程是**多轮“微调+强化学习”迭代优化
 
 1. **旧策略采样生成候选回答**：使用固定的old模型（通常是上一轮训练完成的策略模型，或SFT预热后的基准模型），对单个输入问题q进行采样，生成G个不同的回答组成候选组{A₁, A₂, ..., A_G}（G为组大小，随任务复杂度自适应调整，如数学推理任务G=8，通用任务G=4）。此步骤的核心是依托old模型获取多样化的候选输出，为后续“组内相对评估”提供基础。
 2. **双模型概率计算与DKL求解**：首先计算两个关键概率：① old模型对候选组中每个回答的逐token生成概率（记为P_old）；② 待训练的策略网络对同一批候选回答的逐token生成概率（记为P_θ）。随后基于这两组概率，通过GRPO专属的KL散度公式计算策略偏离度：DKL(π_θ ∥ π_old) = (P_old / P_θ) - log(P_old / P_θ) - 1。这一步的目的是量化新策略与基准策略的差异，为后续稳定更新提供约束。
-3. **奖励计算与组内相对优势求解**：将候选组的所有回答输入奖励模型，得到每个回答的原始奖励值{r₁, r₂, ..., r_G}（奖励维度包括回答准确性、格式规范性、语言一致性等）。基于原始奖励计算组内相对优势：A_i = [r_i - mean(r₁~r_G)] / std(r₁~r_G)，通过归一化消除组间奖励尺度差异，精准衡量单个回答在组内的相对优劣。
+3. **奖励计算与组内相对优势求解**：将候选组的所有回答输入奖励模型，得到每个回答的原始奖励值{r₁, r₂, ..., r_G}（奖励维度包括回答准确性、格式规范性、语言一致性等）。**基于原始奖励计算组内相对优势：A_i = [r_i - mean(r₁~r_G)] / std(r₁~r_G)**，通过归一化消除组间奖励尺度差异，精准衡量单个回答在组内的相对优劣。
 4. **基于公式（1）优化策略网络**：将步骤2得到的概率比（P_θ/P_old）、DKL值，以及步骤3得到的相对优势A_i，代入GRPO核心目标函数（公式1），通过梯度上升最大化目标函数，完成策略网络的一次参数更新。目标函数核心逻辑为：min(概率比×A_i, clip(概率比, 1-ε, 1+ε)×A_i) - β×DKL，既强化优质回答的生成概率，又限制策略突变。
 5. **同一批数据的多轮迭代优化**：将步骤1采样得到的候选组数据复用，进行多轮策略更新。此过程中，仅需重复计算策略网络对候选回答的逐token概率（P_θ），old模型对这些回答的token概率（P_old）无需重新计算，始终沿用步骤2的初始计算结果。
 
@@ -4204,3 +4221,7 @@ GME
   question += text
 
   question += "请直接回答文本想要表达的准确答案（风格和前面的示例类似，通常20个字词以内，并且不要改变原始回答的意思），不要解释，你输出的答案为："
+
+### Function call
+
+![4185f765-2355-4f9f-ad1c-a396945035ca](./image/4185f765-2355-4f9f-ad1c-a396945035ca.png)
