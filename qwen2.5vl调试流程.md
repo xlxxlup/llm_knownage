@@ -85,4 +85,13 @@ You are a helpful assistant.<|im_end|>
 
 ## Qwen3
 
-后训练阶段：1、长思维链数据冷启动微调 2、数学、code上做强化学习 3、混合数据集 推理输出、非推理输出 做微调 4、通用领域强化学习
+[Qwen3：划时代的多语言、多模式、开源大模型-CSDN博客](https://blog.csdn.net/jiemo99/article/details/153819027?ops_request_misc=&request_id=&biz_id=102&utm_term=qwen3&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-0-153819027.142^v102^pc_search_result_base4&spm=1018.2226.3001.4187)
+
+think budget
+
+多语言
+
+预训练：**1、大量数据的预训练 2、推理数据预训练(推理、coding、数学) 3、长文本**
+
+后训练阶段：**1、长思维链数据冷启动微调 2、数学、code上做强化学习  用的是GRPO 3、混合数据集 推理输出、非推理输出 做微调 4、通用领域强化学习**
+

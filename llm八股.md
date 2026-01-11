@@ -4,19 +4,25 @@
 
 [绝对位置编码、相对位置编码、旋转位置编码分别是什么，他们的优缺点是【进阶版】_相对位置编码和绝对位置编码-CSDN博客](https://blog.csdn.net/yxx122345/article/details/146347529?ops_request_misc=&request_id=&biz_id=102&utm_term=不同位置编码的优缺点&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-1-146347529.142^v102^pc_search_result_base4&spm=1018.2226.3001.4187)
 
-1、可学习位置编码
+【位置编码有什么用？简单讲解位置编码原理 + 源码解读（绝对 / 相对 / RoPE）】https://www.bilibili.com/video/BV1xR1RY9ECm?vd_source=c5c396652c0c83be15efe54e0c348c90
+
+#### 1、绝对位置编码
+
+1、正余弦编码
+
+2、可学习的编码
 
 计算简单，但是无法外推，无法捕捉相对位置关系
 
-2、绝对位置编码
+#### 2、相对位置编码
 
-可以外推，无法捕捉相对位置关系
+可以外推，不能做kvcache
 
-3、旋转位置编码
+#### 3、旋转位置编码(包含了正余弦和相对位置编码的信息)
 
-可以外推，可以捕捉相对位置关系
+可以外推，可以捕捉相对位置关系,可以kvcache
 
-#### transformer
+## transformer
 
 ![00c30ee3-da3c-4843-920a-bb30db090085](./image/00c30ee3-da3c-4843-920a-bb30db090085.png)
 
@@ -549,7 +555,7 @@ $$
 
 ![image-20260105145303998](./image/image-20260105145303998.png)
 
-表示逐元素相乘
+**表示逐元素相乘**
 
 ### swiGLU的优势
 
@@ -4191,3 +4197,11 @@ GME
 ### Function call
 
 ![4185f765-2355-4f9f-ad1c-a396945035ca](./image/4185f765-2355-4f9f-ad1c-a396945035ca.png)
+
+### 梯度累计
+
+可以看到，反向梯度更新时，对每个参数求梯度所需要的参数。
+
+可以将a1,a3丢弃掉，梯度更新是，重新计算就好了，时间换空间
+
+![image-20260111225049050](./image/image-20260111225049050.png)
