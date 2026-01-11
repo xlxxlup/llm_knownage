@@ -2,13 +2,19 @@
 
 [【大模型知识点】位置编码——绝对位置编码，相对位置编码，旋转位置编码RoPE（附代码）-CSDN博客](https://blog.csdn.net/qq_45791939/article/details/146075127?ops_request_misc=%7B%22request%5Fid%22%3A%223950a2b8ce1b2b250126e3d928455141%22%2C%22scm%22%3A%2220140713.130102334..%22%7D&request_id=3950a2b8ce1b2b250126e3d928455141&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~top_positive~default-1-146075127-null-null.142^v102^pc_search_result_base4&utm_term=位置编码&spm=1018.2226.3001.4187)
 
+[绝对位置编码、相对位置编码、旋转位置编码分别是什么，他们的优缺点是【进阶版】_相对位置编码和绝对位置编码-CSDN博客](https://blog.csdn.net/yxx122345/article/details/146347529?ops_request_misc=&request_id=&biz_id=102&utm_term=不同位置编码的优缺点&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-1-146347529.142^v102^pc_search_result_base4&spm=1018.2226.3001.4187)
+
 1、可学习位置编码
+
+计算简单，但是无法外推，无法捕捉相对位置关系
 
 2、绝对位置编码
 
+可以外推，无法捕捉相对位置关系
+
 3、旋转位置编码
 
-### peft
+可以外推，可以捕捉相对位置关系
 
 #### transformer
 
@@ -3815,6 +3821,8 @@ qwen2-vl
 ![image-20251226214005304](./image/image-20251226214005304.png)
 
 **维度越低，频率变化越快**
+
+嵌入维度被划分为时间（t）、水平（h）和垂直（w）子空间，每个子空间分配不同的旋转频率。这导致频谱不平衡，后续研究显示这会降低长视频理解基准的性能。为解决这个问题，我们重新设计了频率分配，通过在嵌入维度中交错t、h和w分量（Huang等，2025）。这确保每个时空轴在低频和高频频带上均有统一的表示
 
 ![image-20251227000042665](./image/image-20251227000042665.png)
 
