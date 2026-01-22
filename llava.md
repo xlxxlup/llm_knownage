@@ -1,4 +1,4 @@
-llava
+## llava
 
 ![image-20260112225830696](./image/image-20260112225830696.png)
 
@@ -72,3 +72,6 @@ LLaVA的基础架构由三部分组成：
 | **指令微调**   | MLP+LLM     | 650K+指令数据   | 指令跟随与响应生成 | 20小时   | LoRA/FSDP/ZeRO     |
 | **进阶预训练** | 全参数      | 4M+高质量数据   | 知识注入           | 额外天数 | 混合精度，模型并行 |
 
+# Flamingo
+
+[Flamingo：打破模态壁垒的少样本视觉语言模型_flamingo模型哪一年提出的-CSDN博客](https://blog.csdn.net/m0_65010824/article/details/155012939?ops_request_misc=&request_id=&biz_id=102&utm_term=flamingo&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-2-155012939.142^v102^pc_search_result_base4&spm=1018.2226.3001.4187)

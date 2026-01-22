@@ -11,3 +11,11 @@ Deque<Character> stack = new ArrayDeque<>();
 
 
 ![image-20251027122442812](./image/image-20251027122442812.png)
+
+
+
+## 堆
+
+大顶堆：任一节点>=左右节点
+
+小顶堆：任一节点<=左右节点
