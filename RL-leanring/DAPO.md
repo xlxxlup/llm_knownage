@@ -16,13 +16,16 @@
 
 ### Token-Level策略梯度损失
 
+**GRPO 原方法：先对每个样本内的 token 平均，再对所有样本平均**
+**GSPO 新方法：直接对所有 token 的损失求和，再除以总 token 数**
+
 传统的GRPO算法采用样本级损失计算，导致长响应中的token对整体损失的贡献较低。DAPO引入了**Token-Level策略梯度损失**，确保长序列中的每个token都能对梯度更新产生同等影响。这一改进不仅提升了训练稳定性，还避免了过长响应中的低质量模式。
 
-###  过长奖励整形
+###  过长奖励整形 
 
 在RL训练中，过长的响应通常会被截断，并受到惩罚。然而，这种惩罚可能会引入奖励噪声，干扰训练过程。DAPO提出了**软过长惩罚**机制，通过长度感知的惩罚区间，逐步增加对过长响应的惩罚，从而减少奖励噪声并稳定训练。
 
-
+![image-20260124165115470](./image/image-20260124165115470.png)
 
 ## **强化学习熵坍塌**
 
@@ -51,8 +54,7 @@
 #### 1. 核心公式
 
 $$
-
-\mathcal{H}(\pi_{\theta}^{k+1} | s) - \mathcal{H}(\pi_{\theta}^k | s) \approx -\eta \cdot \text{Cov}_{a \sim \pi_{\theta}^k(\cdot | s)} \left( \log \pi_{\theta}^k(a | s), A(s, a) \right)
+\mathcal{H}(\pi_{\theta}^{k+1} | s) - \mathcal{H}(\pi_{\theta}^k | s) \approx -\eta \cdot \text{Cov}_{a \sim \pi_{\theta}^k(\cdot | s)} \left( \log \pi_{\theta}^k(a | s), A(s, a) \right)
 $$
 
 
