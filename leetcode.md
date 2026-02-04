@@ -19,3 +19,5 @@ Deque<Character> stack = new ArrayDeque<>();
 大顶堆：任一节点>=左右节点
 
 小顶堆：任一节点<=左右节点
+
+![image-20260201155500889](./image/image-20260201155500889.png)![image-20260201155644249](./image/image-20260201155644249.png)
