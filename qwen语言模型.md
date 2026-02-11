@@ -35,3 +35,9 @@ MOE架构没有用共享专家
 1、on-policy:  学生模型生成输出→对齐教师模型的概率分布（通过 KL 散度约束）
 
 主要为了解决think control 和 蒸馏小模型
+
+
+
+## Qwen3-Next
+
+【闭关两周半，完全从零开始实现Qwen3-Next模型（参数60M，线性注意力GatedDeltaNet），从架构原理到代码实现，绝对是你能找到的最详细的讲解】https://www.bilibili.com/video/BV1f8sdziERA?vd_source=c5c396652c0c83be15efe54e0c348c90

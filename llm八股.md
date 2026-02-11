@@ -696,6 +696,10 @@ $$
 
 - **Linear Attention**: **对 Scaled Dot-Product Attention 的核函数进行简化（如用线性核替代 Softmax）**，**使 Attention 计算可分解为矩阵乘法的串联；将复杂度从 O (n²) 降至 O (n)**，但会牺牲部分注意力的表达能力，常与其他机制结合使用。
 
+  [(44 条消息) 线性注意力机制：Linear Attention->Lightning Attention->Minimax模型 - 知乎](https://zhuanlan.zhihu.com/p/1896380352202794899)
+
+  【闭关两周半，完全从零开始实现Qwen3-Next模型（参数60M，线性注意力GatedDeltaNet），从架构原理到代码实现，绝对是你能找到的最详细的讲解】https://www.bilibili.com/video/BV1f8sdziERA?vd_source=c5c396652c0c83be15efe54e0c348c90
+
 #### **1.7 self-attention 在计算的过程中，如何对padding位做mask？**
 
 在 Attention 机制中，同样需要忽略 padding 部分的影响，这里以transformer encoder中的self-attention为例：self-attention中，Q和K在点积之后，需要先经过mask再进行softmax，因此，**对于要屏蔽的部分，mask之后的输出需要为负无穷**，这样softmax之后输出才为0。
@@ -4392,4 +4396,3 @@ print(f"Focal Loss值：{loss.item():.4f}")
 
 如果需要将Focal Loss适配到你的多轮对话训练场景（比如结合生成式任务的损失），可以告诉我具体任务（如意图分类+回复生成），我会帮你调整代码。
 
-> （注：文档部分内容可能由 AI 生成）
