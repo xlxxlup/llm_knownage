@@ -29,4 +29,17 @@ Deque<Character> stack = new ArrayDeque<>();
 
 小顶堆：任一节点<=左右节点
 
+```java
+ PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+ PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Collections.reverOrder());
+```
+
 ![image-20260201155500889](./image/image-20260201155500889.png)![image-20260201155644249](./image/image-20260201155644249.png)
+
+private StringBuilder temp = new StringBuilder();
+
+temp.append(str.charAt(i));
+
+ temp.deleteCharAt(temp.length()-1);
+
+res.add(temp.toString());

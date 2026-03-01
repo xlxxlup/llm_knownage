@@ -41,3 +41,35 @@ MOE架构没有用共享专家
 ## Qwen3-Next
 
 【闭关两周半，完全从零开始实现Qwen3-Next模型（参数60M，线性注意力GatedDeltaNet），从架构原理到代码实现，绝对是你能找到的最详细的讲解】https://www.bilibili.com/video/BV1f8sdziERA?vd_source=c5c396652c0c83be15efe54e0c348c90
+
+【【技术前沿】Qwen3-Next-80B架构详解，线性注意力革命,下一代Attention模型已来！采用稀疏的MOE架构！通义大模型 AI大模型  qwen3】https://www.bilibili.com/video/BV1k9pqznEEz?vd_source=c5c396652c0c83be15efe54e0c348c90
+
+![image-20260217171657256](./image/image-20260217171657256.png)
+
+![image-20260217172005179](./image/image-20260217172005179.png)
+
+![image-20260217172952314](./image/image-20260217172952314.png)
+
+![image-20260217173253723](./image/image-20260217173253723.png)
+
+![image-20260217173432542](./image/image-20260217173432542.png)
+
+![image-20260217174220132](./image/image-20260217174220132.png)
+
+![image-20260217174349864](./image/image-20260217174349864.png)
+
+
+
+![image-20260217174644789](./image/image-20260217174644789.png)
+
+![image-20260217180642875](./image/image-20260217180642875.png)
+
+![image-20260217180928974](./image/image-20260217180928974.png)
+
+![image-20260217181909167](./image/image-20260217181909167.png)
+
+![image-20260217182246477](./image/image-20260217182246477.png)
+
+QWEN3.5
+
+[(15 条消息) 【LLM】Qwen3.5解剖 - 知乎](https://zhuanlan.zhihu.com/p/2005306558997882654)
