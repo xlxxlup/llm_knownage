@@ -25,13 +25,16 @@ Deque<Character> stack = new ArrayDeque<>();
 
 ## 堆
 
-大顶堆：任一节点>=左右节点
+大顶堆：任一节点>=左右节点    大的在上面
 
-小顶堆：任一节点<=左右节点
+小顶堆：任一节点<=左右节点  小的在上面
 
 ```java
  PriorityQueue<Integer> minHeap = new PriorityQueue<>();
  PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Collections.reverOrder());
+PriorityQueue<Map.Entry<Integer, Integer>> minHeap = new PriorityQueue<>(
+        Comparator.comparingInt(Map.Entry::getValue)
+);
 ```
 
 ![image-20260201155500889](./image/image-20260201155500889.png)![image-20260201155644249](./image/image-20260201155644249.png)
@@ -43,3 +46,9 @@ temp.append(str.charAt(i));
  temp.deleteCharAt(temp.length()-1);
 
 res.add(temp.toString());
+
+
+
+栈
+
+Deque<Character> deque = new ArrayDeque<>();
