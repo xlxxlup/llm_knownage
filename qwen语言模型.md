@@ -1,5 +1,7 @@
 ![image-20260113200944782](./image/image-20260113200944782.png)
 
+[一文通透Qwen LLM系列——从Qwen、Qwen1.5、Qwen2、Qwen2.5到Qwen3(融合了chat和推理)、Qwen3 MoE_qwen3 1.5b-CSDN博客](https://blog.csdn.net/v_JULY_v/article/details/150444999)
+
 ## Qwen
 
 <img src="./image/5efb410b-b91e-4c4f-8a2f-e485a0e9f064.png" alt="5efb410b-b91e-4c4f-8a2f-e485a0e9f064"  />
