@@ -1,5 +1,112 @@
 ### PPO
 
+这份报告将从 **模型角色**、**数据流转**、**核心数学算式**以及**工程实现细节**四个维度，为你彻底复盘 PPO（Proximal Policy Optimization）在大型语言模型（LLM）中的训练全链路。
+
+------
+
+## 1. 核心角色分配 (The Four Pillars)
+
+在 `trl` 或类似的 RLHF 框架中，PPO 训练通常涉及四个模型（或四个逻辑角色）：
+
+| **角色**                 | **物理实体**                               | **是否更新** | **输入**           | **输出**                     |
+| ------------------------ | ------------------------------------------ | ------------ | ------------------ | ---------------------------- |
+| **Actor (策略模型)**     | 待优化的 LLM                               | **是**       | `query + response` | 每一个 Token 的 Logits       |
+| **Critic (价值模型)**    | 回归模型 (通常是 Actor 加一个 Scalar Head) | **是**       | `query + response` | 每一个 Token 的预测价值 $V$  |
+| **Reference (参考模型)** | SFT 后的冻结 LLM                           | 否           | `query + response` | 每一个 Token 的参考 Logprobs |
+| **Reward (奖励模型)**    | 冻结的分类/评分模型                        | 否           | `query + response` | 整个序列的一个标量分值 $S$   |
+
+------
+
+## 2. 训练阶段一：Rollout (采样与离线评估)
+
+这是数据的“生产”阶段。
+
+1. **采样 (Sampling)**：Actor 模型根据 `query` (Prompt) 生成 `response`。
+2. **Logprobs 计算**：
+   - Actor 计算当前生成的 $\log \pi_{\theta}(a_t|s_t)$。
+   - Reference 计算基准的 $\log \pi_{ref}(a_t|s_t)$。
+3. **价值评估 (Value Inference)**：Critic 模型对整个序列跑一遍前向，得到每个位置的价值估计 $V_t$。
+4. **打分 (Rewarding)**：Reward 模型对完整的序列 `query + response` 给出一个全局分数 $Score$。
+
+------
+
+## 3. 训练阶段二：数据预处理 (Token-level Reward Construction)
+
+这是 PPO 最精细的地方。虽然 $Score$ 只有一个，但 PPO 需要**每一个 Token** 都有奖励。
+
+### 3.1 奖励序列构建 ($r_t$)
+
+对于 Response 中的每一个 Token $t$：
+
+- **KL 惩罚**：$kl_t = \log \pi_{\theta}(a_t|s_t) - \log \pi_{ref}(a_t|s_t)$
+
+- **即时奖励**：
+
+  $$r_t = \begin{cases} -\beta \cdot kl_t, & t < T \\ Score - \beta \cdot kl_t, & t = T \end{cases}$$
+
+  *注：只有最后一个 Token 会加上 RM 的分数，前面全是 KL 惩罚。*
+
+### 3.2 优势与回报计算 (GAE)
+
+使用 **GAE (Generalized Advantage Estimation)** 将即时奖励转化为优势函数 $A_t$：
+
+1. **TD Error**：$\delta_t = r_t + \gamma V_{t+1} - V_t$
+2. **Advantage ($A_t$)**：$A_t = \delta_t + (\gamma \lambda) \delta_{t+1} + (\gamma \lambda)^2 \delta_{t+2} + \dots$
+3. **Return ($R_t$)**：$R_t = A_t + V_t$（这是 Critic 的学习目标）。
+
+> **核心细节**：因为 $A_t$ 的计算是向后回溯的，所以即便前面的 Token 即时奖励 $r_t$ 只有 KL 惩罚，但通过 $\delta_{t+1}$ 等项，最后一个 Token 的大奖 $Score$ 会被“折现”回每一个中间 Token。
+
+------
+
+## 4. 训练阶段三：Optimization (梯度更新)
+
+拿到 $A_t$ 和 $R_t$ 后，开启 `ppo_epochs` 次循环更新。
+
+### 4.1 Actor Loss (策略裁剪损失)
+
+$$L^{clip} = - \mathbb{E} \left[ \min \left( \frac{\pi_{new}}{\pi_{old}} A_t, \text{clip}\left(\frac{\pi_{new}}{\pi_{old}}, 1-\epsilon, 1+\epsilon\right) A_t \right) \right]$$
+
+- **输入**：当前时刻的 Logprobs、采样时的 Logprobs、计算好的优势 $A_t$。
+- **逻辑**：如果某个动作 $A_t > 0$（表现好），就调大它的概率，但最大不能超过 $1+\epsilon$ 倍。
+
+### 4.2 Critic Loss (价值均方误差)
+
+$$L^{vf} = \mathbb{E} \left[ (V_{new}(s_t) - R_t)^2 \right]$$
+
+- **输入**：Critic 预测的 $V_t$、计算好的回报 $R_t$。
+- **逻辑**：让 Critic 学会准确预估“在这个节点往后走，总分能拿多少”。**此处覆盖 Response 的所有 Token。**
+
+### 4.3 Entropy Loss (熵损失)
+
+$$L^{ent} = - \mathbb{E} [ H(\pi_{\theta}(s_t)) ]$$
+
+- **逻辑**：防止模型输出变得太单一，维持探索能力。
+
+------
+
+## 5. 关键工程细节 (Deep Dive)
+
+1. **Masking (掩码)**：
+   - 在计算所有 Loss 时，必须通过 Mask 矩阵**忽略掉 Prompt 部分**。梯度只在 Response 部分产生。
+2. **Advantage Normalization**：
+   - 在一个 Batch 内，通常会将 $A_t$ 进行标准化（减均值除方差），这能显著稳定训练，防止某些长难句产生的巨大 Reward 破坏梯度。
+3. **Precision (精度)**：
+   - 通常 Actor 用 BF16/FP16，但 **Critic 模型建议用 FP32 或较高的精度**，因为 $V$ 值是一个回归值，对数值波动非常敏感。
+4. **The $\beta$ Scheduler**：
+   - KL 惩罚系数 $\beta$ 有时是动态的。如果 KL 漂移太大，就调大 $\beta$ 强制模型“回家”；如果 KL 太小，就调小 $\beta$ 放任模型去拿高分。
+
+------
+
+## 6. 总结：为什么 PPO 这么设计？
+
+- **为什么要 Actor-Critic？** Actor 负责跑，Critic 负责评价。没有 Critic，Actor 很难在复杂的长文本生成中搞清楚到底是哪个词写得好（信誉分配问题）。
+- **为什么要 Clip？** 因为采样太贵了，我们想用同一批数据多练几次。Clip 保证了即便练了好几遍，模型也不会跑得太远导致数学失效。
+- **为什么要全序列 Critic Loss？** 虽然 RM 只给最后打分，但 RL 的本质是序列决策。我们需要 Critic 具备“见微知著”的能力，在句子刚说了一半时就能预判结局。
+
+这份流程体现了 PPO 如何在“获取高分”与“不跑偏”之间寻找微细的平衡。你现在的工程任务，是打算在 **DeepSpeed-Chat** 还是 **Verl** 框架下跑这一套逻辑？这两者的并行化实现（尤其是 Actor 和 Critic 的切分）会有细微差异。
+
+
+
 ![image-20251223140136461](./image/image-20251223140136461.png)
 
 ![image-20251223141008887](./image/image-20251223141008887.png)

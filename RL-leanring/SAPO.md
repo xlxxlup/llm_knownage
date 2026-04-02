@@ -1,6 +1,18 @@
+[(1 封私信 / 18 条消息) Qwen 团队推出 SAPO，相较于 GRPO、GSPO 稳定且更优 - 知乎](https://zhuanlan.zhihu.com/p/1978208354783486737)
+
 这份报告深入探讨了 **SAPO (Soft Adaptive Policy Optimization)** 算法。该算法针对大语言模型（LLM）强化学习微调中，传统截断机制（Hard Clipping）导致的训练不稳定和梯度消失问题，提出了一种基于平滑门控函数的改进方案。
 
+
+
+![image-20260331111231745](./image/image-20260331111231745.png)
+
 ------
+
+1. #### **软门控机制（Soft Gating）**：利用以温度系数控制的 [Sigmoid 函数](https://zhida.zhihu.com/search?content_id=267014198&content_type=Article&match_order=1&q=Sigmoid+函数&zhida_source=entity)替代传统的硬截断（Hard Clipping，如 [PPO](https://zhida.zhihu.com/search?content_id=267014198&content_type=Article&match_order=1&q=PPO&zhida_source=entity)/GRPO），构建连续的信任区域，在偏离策略时平滑衰减梯度而非直接置零。
+
+2. #### **[非对称温度控制](https://zhida.zhihu.com/search?content_id=267014198&content_type=Article&match_order=1&q=非对称温度控制&zhida_source=entity)（Asymmetric Temperatures）**：针对正负优势（Advantage）样本对训练稳定性的不同影响，对负样本采用更高的温度系数使其梯度衰减更快，从而抑制大词表下的噪声扩散。
+
+
 
 ## 1. 背景与核心动机：从“硬”到“软”的转变
 
@@ -29,6 +41,7 @@ $$f_{i,t}^{\text{SAPO}}(r_{i,t}(\theta)) = \sigma(\tau_{i,t}(r_{i,t}(\theta) - 1
 
 - **$\sigma(x)$：** Sigmoid 函数。
 - **温度系数 $\tau$：** 控制衰减速率。当 $r_{i,t}(\theta)$ 偏离 1 时，该函数会指数级衰减，从而形成一个平滑的信任区域。
+- ![image-20260331112003136](./image/image-20260331112003136.png)
 
 ------
 
