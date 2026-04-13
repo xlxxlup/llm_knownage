@@ -16,8 +16,8 @@
 
 【[LLM Architect] 08 Dive into K2.5，Kimi K2.5 论文串讲与导读，原生多模态，Agent Swarm，国产之光】https://www.bilibili.com/video/BV1nvcuz5Ewj?vd_source=c5c396652c0c83be15efe54e0c348c90
 
-不同模态数据可以互相增强
+**不同模态数据可以互相增强**
 
 语言模型 架构和k2一样，预训练参数也一样
 
-较早加入图文数据，效果更好
+**较早加入图文数据，效果更好**

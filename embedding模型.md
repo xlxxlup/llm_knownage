@@ -57,4 +57,4 @@ reranker架构
 
 取最后一个token 输出yes和no的概率，拼接起来得到:[no_pro,yes_pro],进行log_softmax,然后反过来exp计算，取出为yes的概率
 
-torch.stack合并时，可以将梯度合并，concat拼接梯度会丢失
+**torch.stack合并时，可以将梯度合并，concat拼接梯度会丢失**

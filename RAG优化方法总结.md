@@ -817,3 +817,21 @@ HyPE流程:
 ![image-20260110171942886](./image/image-20260110171942886.png)
 
 ![image-20260110172154371](./image/image-20260110172154371.png)
+
+## FAISS
+
+[Faiss库_faiss数据库-CSDN博客](https://blog.csdn.net/2501_91906624/article/details/149341760?ops_request_misc=elastic_search_misc&request_id=64e4d61f9f4ca9051ca1b7fb8b7bf005&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~top_click~default-2-149341760-null-null.142^v102^pc_search_result_base4&utm_term=Faiss&spm=1018.2226.3001.4187)
+
+![image-20260402204315749](./image/image-20260402204315749.png)
+
+## IndexIVFFlat
+
+先根据簇的相关性，选出n个簇，然后去选出的簇中进行暴力搜索
+
+![image-20260402204418153](./image/image-20260402204418153.png)
+
+## Product Quantization（PQ）
+
+[Product Quantization（PQ） - 一亩三分地](https://mengbaoliang.cn/archives/71152/)
+
+![image-20260402205211400](./image/image-20260402205211400.png)

@@ -1,3 +1,54 @@
+[大模型 | 一篇搞明白上下文长度扩展：从RoPE到YARN_yarn rope-CSDN博客](https://blog.csdn.net/m0_56255097/article/details/147114526?ops_request_misc=&request_id=&biz_id=102&utm_term=NTK-Aware Interpolation&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-9-147114526.142^v102^pc_search_result_base4&spm=1018.2226.3001.4187)
+
+### 1. Position Interpolation（PI，位置内插）
+
+- **核心**：最朴素的扩展，把扩展后的位置索引**等比例压缩**到原训练长度区间内。
+- **做法**：统一缩小所有频率分量的旋转角度，全局等比例缩放。
+- **致命问题**：依据 NTK 理论，**统一压缩会丢失高频信息**，模型无法区分近距离、语义相似的 token，细节损失极大。
+
+### 2. NTK-aware Interpolation（NTK 感知内插）
+
+- **核心**：修复 PI 的高频丢失，遵循**高频外推、低频内插**。
+- **做法**：按频率差异化缩放 —— 高频尽量不缩（保留细节），低频多缩（适配长上下文），用指数函数关联频率与缩放程度。
+- **问题**：对**极低频频段过度外推**，引入训练中从未见过的旋转角度，导致模型性能下降。
+
+### 3. NTK-by-parts Interpolation（分段 NTK 内插）
+
+- **核心**：精细化频段控制，解决 NTK-aware 的**极低频过度外推**问题。
+
+- 做法
+
+  ：按波长分三段处理
+
+  - 极低频：**完全内插**（绝不外推，避免陌生角度）
+  - 高频：**完全外推**（全力保留高频细节）
+  - 中间频：内外插混合过渡
+
+  
+
+- **优势**：既保住高频局部细节，又不破坏低频全局位置信息。
+
+### 4. YARN（Yet Another RoPE Extension）
+
+- **核心公式**：**YARN = NTK-by-parts + Attention Scaling**，是当前长上下文扩展的**工业标配**。
+
+- 做法
+
+  1. 位置编码：用**NTK-by-parts**做分段频率缩放；
+  2. 注意力层：对 attention score 做**温度缩放**（除以常数 td），稳定长文本注意力分布。
+
+  
+
+- **优势**：只需少量长文本微调，就能大幅扩展上下文；Qwen2.5、DeepSeek‑R1 等主流大模型均使用。
+
+------
+
+### 整体演进一句话
+
+PI（简单但丢高频）→ NTK-aware（保高频但极低频失控）→ NTK-by-parts（分频段精细化）→ **YARN（最终落地版）**。
+
+
+
 # YARN：RoPE 位置编码在长上下文场景下的精准缩放方案
 
 在大模型长上下文扩展领域，**YARN（Yet Another Rescaling Method）** 和 **DCA（Dual Chunk Attention）** 是两类核心的“无训练扩展技术”——前者聚焦**RoPE位置编码的失真修复**，后者聚焦**注意力计算的复杂度优化**，二者从不同维度解决长序列处理的核心痛点。以下是超详细的拆解，包括技术背景、核心原理、实现细节、效果验证和落地建议。

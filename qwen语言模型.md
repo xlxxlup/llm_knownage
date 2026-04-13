@@ -22,41 +22,41 @@ Rmsnorm:训练稳定性
 
 多阶段rl: 
 
-off-policy dpo  :  用sft之后的模型采样 chosen和rejected   培养奖励模型难以评估的能力(思维链)
+off-policy dpo  :  用sft之后的模型采样 chosen和rejected   **培养奖励模型难以评估的能力(思维链)**
 
 on-policy grpo ： 用奖励模型评估
 
 ### Qwen3
 
-引入qk-norm
+**引入qk-norm**：QK-Norm 是在自注意力机制中，对**Query(Q)\**与\**Key(K)\**向量显式执行归一化的技术，核心作用是\**约束注意力得分数值范围、缓解梯度不稳定、提升长上下文与混合精度训练的稳定性**
 
 多语言
 
 MOE架构没有用共享专家,共128个专家，每个token激活8个专家
 
-三阶段预训练：
+**三阶段预训练**：
 
-1、general state：提升通用的理解能力
+1、**general state**：**提升通用的理解能力**
 
-2、reasoning state: 提升推理能力，在代码、推理数据上进行
+2、**reasoning state**: **提升推理能力，在代码、推理数据上进行**
 
-3、长上下文数据，提高rope的频率从10000到1000000，使用yarn和DCA(Dual Chunk Attention)
+3、**长上下文数据**，提高rope的频率从10000到1000000，使用yarn和DCA(Dual Chunk Attention)
 
-旗舰模型4阶段后训练阶段：
+**旗舰模型4阶段后训练阶段**：
 
-1、长思维链冷启动 掌握初步推理能力  ： 难度均衡：排除很难或者很简单的，排除答案对，但是思考过程不对的  领域均衡
+1、**长思维链冷启动 掌握初步推理能力**  ： **难度均衡**：排除很难或者很简单的，**排除答案对，但是思考过程不对的**  **领域均衡**
 
-2、推理RL GRPO  ： 使用对于冷启动阶段得到的模型，是可学习的数据，也不能太难
+2、**推理RL GRPO**  ： **使用对于冷启动阶段得到的模型，是可学习的数据，也不能太难**
 
-3、为了融合模型在快慢模式上的思考能力  SFT 推理数据和非推理数据，有了思维预算的能力
+3、**为了融合模型在快慢模式上的思考能力  SFT 推理数据和非推理数据，有了思维预算的能力**
 
-4、通用RL  ： 指令遵循 、 格式遵循  ： 奖励来自：   1、rule base的奖励 2、将参考答案以及模型的答案给一个比较好的模型判断，是否正确 3、偏好对训出来的奖励模型
+4、**通用RL**  ： **指令遵循 、 格式遵循**  ： 奖励来自：   1、**rule base的奖励** 2、**将参考答案以及模型的答案给一个比较好的模型判断，是否正确** 3、**偏好对训出来的奖励模型**
 
-通用小模型后训练(强弱蒸馏)：
+通用小模型后训练(**强弱蒸馏**)：
 
-1、off-policy ：教师模型产生think和非think数据，进行sft
+1、**off-policy ：教师模型产生think和非think数据，进行sft**
 
-1、on-policy:  学生模型生成输出→对齐教师模型的概率分布（通过 KL 散度约束）
+1、**on-policy:  学生模型生成输出→对齐教师模型的概率分布（通过 KL 散度约束）**
 
 主要为了解决think control 和 蒸馏小模型
 
@@ -95,6 +95,10 @@ MOE架构没有用共享专家,共128个专家，每个token激活8个专家
 ![image-20260217182246477](./image/image-20260217182246477.png)
 
 QWEN3.5
+
+- **混合层架构**：注意力使用了 [Qwen3-Next](https://zhida.zhihu.com/search?content_id=270285706&content_type=Article&match_order=1&q=Qwen3-Next&zhida_source=entity) 里的混合层架构，每3层线性注意力插入1层标准注意力
+- **[Gated Attention](https://zhida.zhihu.com/search?content_id=270285706&content_type=Article&match_order=1&q=Gated+Attention&zhida_source=entity)**：全注意力和线性注意力都引入了Qwen3-Next 中的门控机制。其中线性注意力采用了[DeltaNet](https://zhida.zhihu.com/search?content_id=270285706&content_type=Article&match_order=1&q=DeltaNet&zhida_source=entity)
+- **原生多模态**：大概率从预训练开始使用了视觉数据
 
 [(15 条消息) 【LLM】Qwen3.5解剖 - 知乎](https://zhuanlan.zhihu.com/p/2005306558997882654)
 
