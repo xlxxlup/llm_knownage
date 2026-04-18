@@ -93,6 +93,9 @@ TCP 报文头部标志位解释：SYN、ACK、FIN
 
 MCP Server:MCP服务器，里面就是包含一些执行特殊任务的工具
 
+**MCP（Model Context Protocol）即模型 上下文协议 ，旨在统一大模型与外部数据源和工具之间的通信协议**，是AI agent与外部系统的标准化接口层。MCP 的主要目的在于解决当前 AI 模型因数据孤岛限制而无法充分发挥潜力的难题，MCP 使得 AI 应用能够安全地访问和操作本地及远程数据，为 AI 应用提供了连接万物的接口。
+
+
 ![image-20251220134638824](./image/image-20251220134638824.png)
 
 一般python写的MCP Server 使用uvx启动，node写的MCP Server 使用npx启动
@@ -192,7 +195,9 @@ agent问答阶段
 
 ## skills
 
-**Agent中的Skills是指封装好的功能模块，让Agent具备调用外部工具、操作数据、与系统交互等实际执行能力，是连接大模型认知能力与真实世界操作的桥梁**
+**Agent中的Skills是指封装好的功能模块，是agent的行为规范层，负责帮助AI固化专业流程。让Agent具备调用外部工具、操作数据、与系统交互等实际执行能力，是连接大模型认知能力与真实世界操作的桥梁**
+
+**渐进式披露**：agent启动时只加载skill的name和description。当用户请求命中了某个skill的描述时，才会读取指令层，包含具体的sop,操作步骤，注意事项等。被读取进上下文
 
 ![image-20260401144037759](./image/image-20260401144037759.png)
 
@@ -232,10 +237,302 @@ Harness engineering 说白了，就是**给大模型 “套上缰绳、做好管
 
 ![image-20260401214905589](./image/image-20260401214905589.png)
 
-### Langchain 和 langgraph的区别
+## Langchain 和 langgraph的区别
+
+
 
 **LangChain 是高层、链式、快速开发的 LLM 应用框架**
 
 **LangGraph 是底层、图结构、强状态、适合复杂智能体（Agent）的编排引擎**。LangGraph 由 LangChain 团队开发，现在是 LangChain 生态的**底层运行时**
 
 **LangGraph 以状态图(StateGraph)为核心，通过节点 + 边 + 全局共享状态来编排流程，是更底层的执行调度引擎**
+
+
+
+## 如何评定Agent的质量？
+
+| 维度           | 具体指标                         | 评估方法                |
+| -------------- | -------------------------------- | ----------------------- |
+| **任务完成度** | 成功率、准确率、端到端完成率     | 人工标注 + 自动化测试集 |
+| **效率**       | 平均步数、响应延迟、token消耗    | 埋点监控 + 成本分析     |
+| **稳定性**     | 异常率、重试率、边界case处理能力 | 压力测试 + 混沌工程     |
+| **可解释性**   | 推理链清晰度、决策可追溯性       | 日志审计 + 人工抽检     |
+| **用户体验**   | 满意度评分、对话轮次、放弃率     | A/B测试 + 用户反馈      |
+
+
+
+## 如何处理Agent的幻觉问题？
+
+| 类型           | 表现                  | 解决方案                                              |
+| -------------- | --------------------- | ----------------------------------------------------- |
+| **事实性幻觉** | 编造不存在的知识      | RAG检索增强、知识图谱约束、工具调用验证               |
+| **工具幻觉**   | 调用不存在/错误的工具 | 严格schema校验、工具描述优化、拒识机制                |
+| **推理幻觉**   | 逻辑跳跃、因果错误    | Chain-of-Thought显式推理、反思机制（Self-Reflection） |
+| **记忆幻觉**   | 错误回忆历史信息      | 外部记忆库（Vector DB）、记忆置信度打分               |
+
+
+
+## ReAct架构详解
+
+**ReAct = Reasoning（推理）+ Acting（行动）**
+
+打破传统"先思考后行动"的分离模式，让LLM在**推理**和**行动**之间交替进行，形成"思考→行动→观察→再思考"的循环。
+
+
+
+## AI Coding 经验
+
+1、需求描述尽量的详细具体
+
+2、我描述完需要之后，一般会让ai说说他对我需求的理解，我看看他的理解是否正确。以及他的看法，有什么建议？有什么更好的看法？
+
+3、大的项目先设计整体架构，再依次实现每一个模块，每一个模块单独测试，之后再联调
+
+4、ai生成的方案和代码要review，review之后及时提交到git
+
+5、每次大修之后，需要沉底，保存修改记录，让项目从0开始构建的话，保留架构readme文件
+
+
+
+## 框架概览：CrewAI, LangGraph, AutoGen
+
+[智能体大乱斗：CrewAI, LangGraph, AutoGen，哪个才是你的多智能体AI框架之王？](https://blog.eimoon.com/p/crewai-langgraph-autogen-multi-agent-ai-frameworks-comparison/)
+
+
+
+**CrewAI**：这个框架的核心理念是“**基于角色的[ 协作](https://blog.eimoon.com/p/crewai-langgraph-autogen-multi-agent-ai-frameworks-comparison/#)**”，它模拟真实组织结构。每个 Agent 都有明确的角色、职责，并能访问专属工具。这让它非常适合那种“团队协作式”的工作流。**CrewAI 擅长任务导向型协作**，尤其是在角色和职责清晰时能高效执行，内置支持常见的业务工作流模式。
+
+**LangGraph**：它采用的是“**基于图（Graph-based）的工作流设计**”，将 Agent 交互视为有向图中的节点。这种架构为复杂的决策管道提供了卓越的灵活性，支持条件逻辑、分支工作流和动态适应。LangGraph 在需要复杂编排、多个决策点和并行处理能力的场景下表现出色。
+
+**AutoGen**：则专注于“**会话式 Agent 架构**”，**强调自然语言交互和动态角色扮演**。它在创建灵活的、对话驱动的工作流方面表现突出，Agent 可以根据上下文动态调整角色。AutoGen 的强项在于快速原型开发和需要“人机协作（Human-in-the-Loop）”的场景，自然语言交互是核心。
+
+
+
+我用一个**具体场景**来对比：假设我们要做一个 **"新品上市的市场调研与营销方案"** 任务。
+
+---
+
+## 场景需求拆解
+
+1. **调研员** 收集竞品数据（工具：搜索引擎）
+2. **分析师** 分析数据，判断市场机会（工具：数据分析）
+3. **决策点**：如果机会评分 > 7分，继续；否则终止
+4. **策划师** 制定营销方案
+5. **人工审核**：老板确认预算和方向
+6. **文案** 产出最终推文/海报文案
+
+---
+
+## CrewAI：像"流水线工厂"
+
+**核心理念**：每个工人站一个工位，按 SOP 顺序干活。
+
+```python
+from crewai import Agent, Task, Crew
+
+# 1. 定义角色（像招聘员工）
+researcher = Agent(
+    role="市场调研员",
+    goal="收集竞品价格和用户评论",
+    tools=[SerperDevTool()],
+    allow_delegation=False  # 只管自己的事
+)
+
+analyst = Agent(
+    role="数据分析师", 
+    goal="评估市场机会并打分",
+    tools=[PythonTool()]
+)
+
+planner = Agent(
+    role="营销策划师",
+    goal="制定可执行的营销方案"
+)
+
+writer = Agent(
+    role="文案",
+    goal="写10条微博推文"
+)
+
+# 2. 定义任务（像下工单）
+task1 = Task(description="搜集3款竞品数据", agent=researcher)
+task2 = Task(description="分析数据并打分(1-10)", agent=analyst, context=[task1])
+task3 = Task(description="制定营销方案", agent=planner, context=[task2])
+task4 = Task(description="写推广文案", agent=writer, context=[task3])
+
+# 3. 组队开工
+crew = Crew(agents=[researcher, analyst, planner, writer], tasks=[task1, task2, task3, task4])
+result = crew.kickoff()
+```
+
+**运行体验**：
+- 像工厂流水线：研究员 → 分析师 → 策划师 → 文案，**严格串行**
+- 每个 Agent 只看到自己的任务单，不聊天，不商量
+- 如果想并行（比如同时调研3个平台），用 `Process.parallel` 配置
+
+**适合**：角色固定、流程标准化的企业工作流（如财报分析、客服工单处理）
+
+---
+
+## LangGraph：像"智能车间"
+
+**核心理念**：不是流水线，是**电路板**——有传感器、开关、回流线。
+
+```python
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+# 1. 定义状态（全局共享黑板）
+class MarketState(TypedDict):
+    research_data: str
+    score: int
+    plan: str
+    human_approved: bool
+    final_copy: str
+
+# 2. 定义节点（工序）
+def research(state):
+    data = search_tool.run("竞品分析")
+    return {"research_data": data}
+
+def analyze(state):
+    score = llm.invoke(f"给这个机会打分(1-10)：{state['research_data']}")
+    return {"score": int(score)}
+
+def make_plan(state):
+    plan = llm.invoke(f"基于数据写方案：{state['research_data']}")
+    return {"plan": plan}
+
+def human_review(state):  # 人工审核节点
+    # 弹出界面问老板："这个方案预算50万，是否继续？"
+    raise NodeInterrupt(f"请审核方案：{state['plan']}")
+
+def write_copy(state):
+    copy = llm.invoke(f"基于方案写文案：{state['plan']}")
+    return {"final_copy": copy}
+
+def stop(state):
+    return {"final_copy": "机会不足，项目终止"}
+
+# 3. 构建图（关键：条件分支 + 循环）
+workflow = StateGraph(MarketState)
+
+workflow.add_node("research", research)
+workflow.add_node("analyze", analyze)
+workflow.add_node("plan", make_plan)
+workflow.add_node("human_review", human_review)
+workflow.add_node("write", write_copy)
+workflow.add_node("stop", stop)
+
+workflow.set_entry_point("research")
+workflow.add_edge("research", "analyze")
+
+# 条件边：像交通信号灯
+workflow.add_conditional_edges(
+    "analyze",
+    lambda state: "go" if state["score"] > 7 else "stop",
+    {"go": "plan", "stop": "stop"}
+)
+
+workflow.add_edge("plan", "human_review")
+workflow.add_edge("human_review", "write")  # 老板批准后
+workflow.add_edge("write", END)
+workflow.add_edge("stop", END)
+
+app = workflow.compile()
+```
+
+**运行体验**：
+- 数据在节点间**显式流动**，像电路板上的电流
+- **条件分支**：分析结果 < 7分直接走 `stop` 支路，不会浪费算力做方案
+- **断点续跑**：走到 `human_review` 节点自动暂停，等老板在后台点"通过"才继续
+- **可回溯**：因为 State 被持久化，可以随时回到任意节点重跑
+
+**适合**：需要复杂判断、人工审批、容错回滚的严谨业务流程（如金融风控、医疗诊断）
+
+---
+
+## AutoGen：像"项目组拉群脑暴"
+
+**核心理念**：不是流水线，是**微信群**——大家七嘴八舌，老板随时被@。
+
+```python
+from autogen import ConversableAgent, GroupChat, GroupChatManager
+
+# 1. 定义角色（像拉人进群）
+researcher = ConversableAgent(
+    name="调研员",
+    system_message="你是市场调研员，负责搜集数据。发现数据不足时，请要求分析师补充。"
+)
+
+analyst = ConversableAgent(
+    name="分析师",
+    system_message="你是分析师，基于数据打分。如果分数低，直接建议终止项目。"
+)
+
+planner = ConversableAgent(
+    name="策划师",
+    system_message="你是营销专家，只有分析师说机会好时，你才出方案。"
+)
+
+boss = ConversableAgent(
+    name="老板",
+    system_message="你是决策者，负责审核预算。说'批准'或'驳回'。",
+    human_input_mode="ALWAYS"  # 关键：每轮都问真人
+)
+
+# 2. 群聊设置
+groupchat = GroupChat(
+    agents=[researcher, analyst, planner, boss],
+    messages=[],
+    max_round=10,
+    speaker_selection_method="auto"  # AI自动决定下一个谁说话
+)
+
+manager = GroupChatManager(groupchat=groupchat)
+
+# 3. 丢一个需求进去，大家开始讨论
+boss.initiate_chat(
+    manager,
+    message="我们要推出一款智能水杯，大家讨论下要不要做营销 campaign。"
+)
+```
+
+**实际对话流**：
+```
+调研员：我搜了竞品，发现小米/华为已经占据80%市场，数据如下...
+分析师：基于这些数据，我给这个机会打 5 分，建议终止。
+策划师：我同意分析师，市场太红海了，除非我们有差异化卖点。
+老板（真人输入）：驳回，这个项目不做了。
+```
+
+或者另一种情况：
+```
+调研员：竞品只有2家，且差评很多，机会很大！
+分析师：我打 8 分，可以做。
+策划师：那我建议主打"续航焦虑"卖点，预算30万。
+老板（真人输入）：预算降到20万，重新做方案。
+策划师：收到，调整为聚焦校园市场，预算20万...
+```
+
+**运行体验**：
+- **无固定流程**：没人规定必须先调研后分析，Agent 们自己商量着来
+- **动态角色**：如果研究员发现数据不够，它可以主动说"分析师你先别急着打分，等我再查一下京东"
+- **人机自然融合**：老板像在微信群里被@一样随时介入
+- **风险**：如果 Agent 们"聊嗨了"，可能互相踢皮球，10轮都达不成共识
+
+**适合**：创意策划、头脑风暴、需要频繁协商的探索性任务
+
+---
+
+## 三框架对比总结（同场景）
+
+| 维度           | CrewAI           | LangGraph        | AutoGen           |
+| -------------- | ---------------- | ---------------- | ----------------- |
+| **协作方式**   | 流水线，各司其职 | 电路板，条件分支 | 微信群，自由讨论  |
+| **流程确定性** | 高（预定顺序）   | 高（图结构固化） | 低（动态协商）    |
+| **人工介入**   | 难（需打断重启） | 易（断点节点）   | 极自然（随时@）   |
+| **代码复杂度** | 低               | 高               | 中                |
+| **调试难度**   | 低               | 低（可视化图）   | 高（对话黑盒）    |
+| **适合谁**     | 业务运营人员     | 工程师/架构师    | 产品经理/创意团队 |
+

@@ -1,5 +1,7 @@
 ### BGE-M3
 
+[BGE M3-Embedding 模型介绍 - JadePeng - 博客园](https://www.cnblogs.com/xiaoqi/p/18143552/bge-m3)
+
 # 三种常见文本检索匹配方式及差异对比
 
 这是三种常见的文本检索匹配方式，核心是通过不同的向量/权重计算逻辑，衡量“查询（query）”和“文本段（passage）”的相关性，具体解释如下：
@@ -57,4 +59,3 @@ reranker架构
 
 取最后一个token 输出yes和no的概率，拼接起来得到:[no_pro,yes_pro],进行log_softmax,然后反过来exp计算，取出为yes的概率
 
-**torch.stack合并时，可以将梯度合并，concat拼接梯度会丢失**

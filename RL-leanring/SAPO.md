@@ -18,8 +18,8 @@
 
 在 RLHF（基于人类反馈的强化学习）中，为了防止新策略 $\pi_\theta$ 偏离旧策略 $\pi_{\theta_{\text{old}}}$ 太远，通常会使用信任区域（Trust Region）方法。
 
-- **传统痛点 (PPO/GRPO)：** 采用“硬截断”机制。一旦 $r_{i,t}(\theta)$ 超出设定范围，梯度会直接归零（Zeroing gradients），这不仅浪费了潜在的学习信号，还可能导致训练过程中的突发不稳定。
-- **SAPO 的创新点：** 引入了一个**受温度控制的软门控（Soft Gate）**来取代硬截断。它通过平滑降权（Smooth Downweighting）来处理“离策（off-policy）”的 Token，既保留了有益的梯度方向，又抑制了极端的策略偏移。
+- **传统痛点 (PPO/GRPO)：** **采用“硬截断”机制。一旦 $r_{i,t}(\theta)$ 超出设定范围，梯度会直接归零（Zeroing gradients），这不仅浪费了潜在的学习信号，还可能导致训练过程中的突发不稳定**。
+- **SAPO 的创新点：** **引入了一个受温度控制的软门控（Soft Gate）来取代硬截断。它通过平滑降权（Smooth Downweighting）来处理“离策（off-policy）”的 Token，既保留了有益的梯度方向，又抑制了极端的策略偏移**。
 
 ------
 
@@ -35,7 +35,7 @@ $$J(\theta) = \mathbb{E}_{q \sim \mathcal{D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{
 
 ### 2.2 SAPO 的平滑门控函数
 
-SAPO 的门控函数定义如下：
+SAPO 的**门控函数**定义如下：
 
 $$f_{i,t}^{\text{SAPO}}(r_{i,t}(\theta)) = \sigma(\tau_{i,t}(r_{i,t}(\theta) - 1)) \cdot \frac{4}{\tau_{i,t}} \text{}$$
 
@@ -51,9 +51,9 @@ $$f_{i,t}^{\text{SAPO}}(r_{i,t}(\theta)) = \sigma(\tau_{i,t}(r_{i,t}(\theta) - 1
 
 这是 SAPO 最精妙的设计之一。论文指出，正负反馈在 LLM 词表上的梯度传播具有不对称性：
 
-- **正优势 ($\hat{A} > 0$)：** 增加采样 Token 的概率，减少未采样 Token 的概率，更新目标明确。
+- **正优势 ($\hat{A} > 0$)：** **增加采样 Token 的概率，减少未采样 Token 的概率，更新目标明确**。
 
-- **负优势 ($\hat{A} \leq 0$)：** 减少采样 Token 的概率，但会**弥散（Diffuse）**到成千上万个无关 Token 上，引发巨大的不稳定性。
+- **负优势 ($\hat{A} \leq 0$)：** **减少采样 Token 的概率，但会弥散（Diffuse）到成千上万个无关 Token 上，引发巨大的不稳定性。**
 
 - **策略方案：** 设置 **$\tau_{neg} > \tau_{pos}$**。
 

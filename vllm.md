@@ -4,9 +4,9 @@
 
 vLLM 引入了 **PagedAttention、Prefix Sharing、Continuous Batching** 和 **KV Cache 淘汰策略**，形成高性能推理方案：
 
-- **PagedAttention**：将 KV Cache 分页管理，按需分配逻辑页，解决内部与外部显存碎片问题。
-- **Prefix Sharing**：相同前缀请求共享 KV Cache，节省显存并减少重复计算，分叉时通过 Copy-on-Write 保证正确性。
-- **Continuous Batching**：动态批处理机制，让新请求随时加入正在执行的 batch，提高 GPU 利用率 并 降低请求延迟。
+- **PagedAttention**：**将 KV Cache 分页管理，按需分配逻辑页**，**解决**内部与外部**显存碎片问题**。
+- **Prefix Sharing**：**相同前缀请求共享 KV Cache**，节省显存并减少重复计算，**分叉时通过 Copy-on-Write 保证正确性**。
+- **Continuous Batching**：**动态批处理机制**，**让新请求随时加入正在执行的 batch，提高 GPU 利用率 并 降低请求延迟**。
 - **KV Cache 淘汰策略**：显存不足时先换到 CPU 内存，内存不足时再淘汰，必要时重新计算。
 
 
@@ -48,9 +48,9 @@ vLLM 引入了 **PagedAttention、Prefix Sharing、Continuous Batching** 和 **K
 
 大量用户请求会有**完全相同的前缀**，比如：
 
-- 相同的系统提示词（System Prompt）；
-- 相同的历史对话轮次；
-- 相同的知识库检索前缀。
+- **相同的系统提示词**（System Prompt）；
+- **相同的历史对话轮次**；
+- **相同的知识库检索前缀**。
 
 ## 传统方式的浪费
 
@@ -60,14 +60,14 @@ vLLM 引入了 **PagedAttention、Prefix Sharing、Continuous Batching** 和 **K
 
 1. 识别请求之间**完全一致的前缀 token 序列**；
 
-2. 只计算**一份**该前缀的 KV Cache，所有请求**共享这部分缓存**；
+2. **只计算一份该前缀的 KV Cache**，所有请求**共享这部分缓存**；
 
 3. 当前缀出现分叉（比如用户输入不同问题）时，使用 
 
    **Copy-on-Write**（写时复制）：
 
-   - 不修改原始共享 KV；
-   - 分叉部分新建独立的 KV 页，只复制差异部分。
+   - **不修改原始共享 KV**；
+   - **分叉部分新建独立的 KV 页，只复制差异部分**。
 
    
 
