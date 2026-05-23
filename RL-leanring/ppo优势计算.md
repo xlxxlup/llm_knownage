@@ -389,7 +389,7 @@ $$\hat{A}_t^{GAE}(\gamma, \lambda) = \sum_{l=0}^{\infty} (\gamma\lambda)^l \delt
 
 ### 如何实现平衡？
 
-- **当 $\lambda \to 0$：** 公式退化为 $\delta_t$。这对应 **TD(0)**，完全相信 Value Model。此时**方差最小，但偏差最大**（依赖模型准确度）。
+- **当 $\lambda \to 0$：** 公式退化为 $\delta_t$。这对应 **TD(0)**，**完全相信 Value Model**。此时**方差最小，但偏差最大**（**依赖模型准确度**）。
 - **当 $\lambda \to 1$：** 公式累积了序列中所有的 $r_t$。这对应 **Monte Carlo**。此时**偏差为 0，但方差最大**（受路径随机性影响）。
 
 **结论：**
