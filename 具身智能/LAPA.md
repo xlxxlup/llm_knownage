@@ -1,0 +1,1 @@
+【[论文速览]Latent Action Pretraining from Videos[2410.11758]】 https://www.bilibili.com/video/BV144KPeYE9v/?share_source=copy_web&vd_source=c5c396652c0c83be15efe54e0c348c90

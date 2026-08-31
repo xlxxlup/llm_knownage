@@ -1,0 +1,1 @@
+【[论文速览]OpenVLA: An Open-Source Vision-Language-Action Model[2406.09246]】 https://www.bilibili.com/video/BV1m1421C7m7/?share_source=copy_web&vd_source=c5c396652c0c83be15efe54e0c348c90
