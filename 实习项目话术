@@ -1,0 +1,90 @@
+简历上的项目介绍：
+
+厦门快商通科技有限公司
+
+垂直领域客服对话大模型
+
+项目描述：负责垂直医疗领域对话大模型（LLM）的全链路后训练迭代，围绕在线问诊及留联转化目标，构建“数据治理-策略训练-Badcase修复”的标准化闭环体系。
+
+高标准数据治理体系：面向 45万+ 真实多轮对话，设计并搭建数据筛选与自动化合成流水线。通过对话轮数、语义表达初筛、Embedding 语义去重及LLM-as-a-Judge深度质检，实现数据从“量”到“质”的精细化治理，最终沉淀10万条高质量SFT样本。
+任务导向的 SFT 策略优化：针对重复提问、信息漏识别等逻辑痛点，构建核心问诊信息槽位体系。通过合成口语化年龄、症状描述等多样化样本，显著强化模型对上下文状态的理解与记忆能力。
+业务价值产出：从训练层面根治无效重复问诊问题，实现模型对已知信息的精准识别与状态保持。最终将重复问诊率从 10.6% 降至 5.9%，整体问题率从 13% 降至 7.4%，显著提升了用户体验与留联效率。
+
+
+垂直领域生成式奖励模型
+
+项目描述：主导构建生成式奖励体系，利用强化学习(DAPO)激励模型产生深层思维链，系统化治理对话复杂场景下的奖励模型对位置敏感性、判别偏见与逻辑断层问题。
+
+一致性蒸馏与思维链规范化：实施双向序一致性校验，仅保留置换顺序后得分与 Rubrics 命中点完全一致的高质量样本作为 SFT 冷启动数据；规范模型遵循 <reason> -> <compare> -> <score> 结构化路径，要求模型在打分前完成20+项Rubrics归因判定，将黑盒打分转化为具备业务理据的强逻辑归因，确保了底层逻辑的确定性与评价透明度。
+DAPO 过程监督优化：引入DAPO算法解决推理逻辑与评分结果脱节的顽疾。通过强化学习探索更优推理路径，激励模型在给出分数前进行原子化规则校验，从机制上抑制 Reward Hacking，显著增强了得分的可解释性。
+跨范式混合训练策略：构建“单候选+ 多候选”的混合训练分布，提升模型在不同任务范式下的泛化能力，确保其在复杂同质化场景下仍具备极强的判别鲁棒性。
+三重复合奖励设计：设计得分偏好、规则匹配及位置一致性三重奖励函数，构建客观中立的评价体系。
+业务价值产出：①偏好准确率：(a,b) 57.1% 提升至 64.3% , (b,a) 41.6% 提升至 50.3%。②规则匹配度(Pass@5)：(a,b) 20.4% 提升至 27.2% , (b,a) 11.6% 提升至 19.6%。③位置一致性：从 27.9% 提升至 32.3%，显著增强了奖励模型的客观公信力与评测鲁棒性。
+
+
+自己写的实习项目话术：
+
+
+这个公司的业务主要是做那种套联客服机器人，主要是在医疗(植发、皮肤科等科目)，美容院等领域，做这种套联机器人，就是那种小广告，点击去咨询
+，机器人实表面是在为访客答疑，实际是为了套联
+
+做的第一个内容就是这个客服大模型，从这个数据处理到badcase的处理
+原始数据一共45万条，多轮对话数据集。首先是通过这个数据轮次，因为这种业务的客服对话轮数是不能太长的，提取了1-15轮的数据。然后就是通过
+搜索词(意图(问诊(什么病。病的名称，症状名称)、用药咨询等) 、通过embedding过滤掉重复数据(相似度阈值怎么确定？)，再通过llm as a judge(根据业务)的方式判断回复
+的好坏过滤掉不符合要求的数据，最终得到十万条数据
+
+
+模型 qwen3-8b
+进行sft之后，基本满足要求。对于一些口语化、不直白的表达，会出现重复问诊。比如说，"我孩子现在初中，长痘痘"。这时候其实就没必要再去问年龄了。
+或者是，"我老公脱发怎么治疗“，模型还是会问你是男性还是女性。这其实是灾难性遗忘导致的，因为用没微调过模型，模型一般是不会重新问的，但是就是微调完之后就不行了。
+主要用了几种手段1、构造数据，数据集丰富度不够 2、改变这种微调的方式，最近这种自蒸馏的方法挺火，就试了试，这种重复问诊的问题确实少了些，但是又会出现啰嗦的问题。因为我训的方式时，把gloden response放到teacher
+模型的提示词里面，然后rollout出多个回答，再和学生模型做kl散度。模型会出现那种，根据”参考回答..... 怎么样怎么样“，“.....，符合要求”  最终还是通过这种信息槽位的方法，类似思维链，在回答前面加(年龄：、性别：、症状：疾病:)
+主要做法就是：先搜集了年龄、性别、症状、
+
+
+后续还有dpo，因为他们这边有很多客户，不同客户对机器人回复风格的要求有一些差别。有些要答疑+（问诊或套联），答疑+(问诊或套联) 福利套联  ， 
+
+后续做了那个生成式奖励模型，三个作用：1、强化学习需要 2、线上的访客模型产生多个回答，选一个最优的 作为回复 3、清洗数据 
+最开始都是用的判别式奖励模型，但是这种泛化性比较差(客户很多家，可能每一家对模型回复都有细微的差异)、可解释性差(线上模型产生了3条回复，人工觉得1更好，但是dpo却觉得2更好，找不到原因)、可控性差，因为很多家客户，不同客户偏好不一样，用dpo的方式的访客模型，用同一个模型不好使。
+
+用闭源或者开源的商业大模型 gpt、kimi2.5这种完全够用，但是数据隐私性，不能用闭源的商业大模型，开源的这种kimi2.5太大了，显存不够 。他们这边一共就16张A800，想着能不能用一个32B的模型来做生成式奖励模型
+然后就训了这个生成式奖励模型。 
+
+主要的做法就是
+sft+rl(dapo)  参考了很多篇生成式奖励模型训练相关的文章  。
+
+
+原始数据一共是有30k条，之前训dpo的偏好数据，然后我把候选项调换位置，变成double
+
+
+
+这一块改写了2k条数据，主要是因为他们原来的数据集是模型rollout出来人工标注的，那么这些回复其实只会存在一些业务方面的问题，但是我们这种奖励模型应该不仅仅是只评价业务维度。有些扣分项在原始数据集中不存在，所以需要构造
+一些数据(比较重要的，但是数据集基本没涉及到的点，违禁具体信息、自我说明)，生成的方式就是把现有对话数据，以及希望该数据违反的规则一起作为提示词，让模型改写。改写完之后，质量评估就是再让大模型跑一遍，产生多条打分，超过一半
+的扣加分规则是在原来的基础上加了我刚改写对应的规则，就算成功
+
+加起来原始数据就是32k
+
+还得划分训练和测试集，怎么划分呢  根据每条数据所触发的规则划分 需要保证训练集和测试集的数据尽量触发相同的规则，以及根据这个开场语的搜索词去划分
+
+32k -> 
+
+提示词 结合业务写了28多条规则(套联相关的、对话质量、医学合规、回复风格与可持续性) ，是人工标注的，给出每个候选项的扣加分项，以及最后的分数。然后用deepseekR1跑了一遍这个数据，进行蒸馏，主要是为了产生思维链进行sft，
+一共选了5k条数据(扣加分规则数目，不能太少或者太多，需要和人工标注的一致)，这五千条数据最终的得分以及规则和人工的一致，作为这种较高质量的思维链冷启动。
+
+
+微调配置
+数据集数量：1250  10个小时  loss=0.13
+/data2/ms-swift/ms-swift/swift/cli/sft.py --model_type qwen3 --template qwen3_nothinking --model /data2/Qwen3-14B-Instruct/ --dataset /data2/ms-swift/ms-swift/train_data/merged_sft_data.jsonl --num_train_epochs 1 --per_device_train_batch_size 2 --gradient_accumulation_steps 2 --learning_rate 1e-4 --weight_decay 0.01 --warmup_ratio 0.05 --eval_strategy steps --optim adamw_torch --logging_steps 1 --save_steps 50 --save_total_limit 4 --lr_scheduler_type cosine --bf16 true --gradient_checkpointing true --lora_rank 32 --lora_alpha 64 --loss_scale last_round --lora_dropout 0.05 --max_length 24576 --load_from_cache_file false --output_dir /data2/ms-swift/ms-swift/output/qwen3-reward-model-sft-lora-0313 --ddp_find_unused_parameters false --save_only_model true --report_to swanlab --swanlab_project qwen3-reward-model --swanlab_exp_name qwen3-reward-model-sft-lora-0313 --swanlab_mode cloud --enable_thinking false
+
+
+对模型进行sft之后，测了checkpoint，这里应该选哪个checkpoint呢，如确确定选哪个，应该考虑什么因素。我是去测了数据集，看他的输出格式稳定性，以及打分偏好大小、规则匹配的准确率
+
+
+之后就是进行dapo强化学习，奖励设计主要是得分偏好奖励(2分)得分相对大小、规则匹配奖励(2分)规则匹配的F1、位置一致性奖励(2分)
+
+为什么用dapo？不用grpo？ 数据集难度不一致，有些数据rollout出的回复最终得到的奖励是一样的，所以就想着用这个dapo，对于优势为0的数据多rollout几次
+
+满分6分  得分偏好奖励mean 0.75 -> 1.5    std 1.5  ->  0.8    规则匹配奖励 mean  0.6 -> 1.1  std  1.7 ->0.9  位置一致性  mean 0.3 -> 0.7  std 0.9  ->  0.78
+
+
+/data2/ms-swift/ms-swift/swift/cli/rlhf.py --rlhf_type grpo --model /data2/皮肤科/强化学习数据/qwen3-14b-with-sft --model_type qwen3 --template qwen3 --reward_funcs correctness rule_match --reward_weights 2.0 1.0 --dataset /data2/皮肤科/强化学习数据/grpo/grpo_dataset.jsonl --dataset_shuffle false --load_from_cache_file true --use_vllm true --vllm_mode colocate --vllm_gpu_memory_utilization 0.1 --tuner_type full --num_train_epochs 1 --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 1e-6 --warmup_ratio 0.05 --weight_decay 0.01 --num_generations 4 --num_iterations 2 --max_completion_length 4096 --temperature 0.9 --top_p 0.9 --top_k 50 --stop_words </score> --repetition_penalty 1.1 --beta 0.04 --output_dir /data2/皮肤科/强化学习数据/full_grpo_train_output --logging_steps 1 --save_steps 100 --save_total_limit 4 --overwrite_output_dir true --deepspeed zero3 --dataloader_num_workers 4 --dataset_num_proc 4 --bf16 true --remove_unused_columns false --truncation_strategy left --report_to swanlab --swanlab_project qwen3-14B-Intruct-grpo --swanlab_exp_name qwen3-14B-grpo-full-train-zero2 --log_completions true --log_entropy true --vllm_tensor_parallel_size 8
